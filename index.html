@@ -1,813 +1,1141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>Bean Stack</title>
-    <style>
-        :root {
-            --bg: #F9F9F9;
-            --surface: #FFFFFF; 
-            --text: #333;
-            --border: #E0E0E0;
-            --primary: #333;
-            --accent-blue: #A2D2FF;
-            --accent-red: #FFAAA5;
-            --accent-yellow: #FFD3B6;
-            --accent-purple: #E0C3FC;
-            --accent-brown: #D7CCC8;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Coffee Tracker</title>
+  <style>
+:root{
+  --bg:#f7f5f2;
+  --card:#ffffff;
+  --ink:#1a1a1a;
+  --muted:#6b7280;
+  --accent:#f59e0b;
+  --stroke:#e6d9c8;
+  --soft:#f3f4f6;
+  --gap:#e5e7eb;
+}
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji;
+}
 
-        /* --- LAYOUT --- */
-        .main-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            align-items: start;
-        }
+.app-container{max-width:1120px; margin:24px auto; padding:0 16px}
+.topbar{display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:16px}
+h1{font-size:22px; margin:0}
+h2{font-size:18px; margin:24px 0 12px 0}
+.sub{color:var(--muted); font-size:13px}
+.small{font-size:12px; font-style: italic}
+.footer{margin:12px 0}
 
-        @media (max-width: 768px) {
-            .main-container { grid-template-columns: 1fr; } 
-        }
+.grid{
+  display:grid;
+  grid-template-columns: 360px 1fr; /* fixed left column to prevent bleed */
+  gap:10px;
+}
+@media (max-width: 900px){ .grid{ grid-template-columns: 1fr } }
 
-        h1, h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 20px 0; }
-        h2 { font-size: 1.3rem; margin-top: 40px; margin-bottom: 15px; border-top: 1px solid #ddd; padding-top: 20px; }
-        .logo-icon { font-size: 1.5rem; }
+.card{
+  background:var(--card);
+  border:1px solid var(--stroke);
+  border-radius:14px; padding:14px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+  margin-bottom:2px;
+}
+.card h3{margin:0 0 8px 0; font-size:16px}
+.card-head{display:flex; align-items:center; gap:12px; justify-content:space-between; margin-bottom:12px}
 
-        /* --- CARDS --- */
-        .card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-            transition: border-color 0.2s;
-        }
-        
-        .step-edit-active {
-            border: 2px solid #333 !important;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
+label{font-size:12px; color:#374151; display:block}
+input[type="text"], input[type="number"], select, textarea{
+  width:100%; margin-top:6px; padding:8px 10px; border-radius:10px;
+  border:1px solid #e5e7eb; background:#fff; outline:none;
+}
+textarea{min-height:72px; resize:vertical}
 
-        .card-header {
-            font-weight: 700;
-            font-size: 1.1rem;
-            margin-bottom: 15px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 10px;
-            display: flex; justify-content: space-between; align-items: center;
-        }
+/* Style for type dropdown */
+.type-select, select {
+  appearance: none;        /* remove native browser arrow */
+  -webkit-appearance: none;
+  -moz-appearance: none;
 
-        /* --- FORMS --- */
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+  background-color: #fff;
+  border: 1px solid #d1d5db; /* Tailwind gray-300 */
+  border-radius: 0.5rem;     /* rounded corners */
+  padding: 6px 12px;
+  font-size: 12px;
+  line-height: 1.2;
+  color: #111827;           /* Tailwind gray-900 */
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  
+  background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='20' viewBox='0 0 20 10' width='20' xmlns='http://www.w3.org/2000/svg'><polygon points='0,0 16,0 8,8'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 12px;
+  padding-right: 28px; /* space for arrow */
+}
 
-        label { display: block; font-size: 0.75rem; font-weight: 600; color: #666; margin-bottom: 5px; }
-        input, select, textarea {
-            width: 100%; padding: 10px; border: 1px solid var(--border);
-            border-radius: 6px; font-size: 0.9rem; background: #FAFAFA; box-sizing: border-box;
-        }
-        
-        /* --- BUTTONS --- */
-        button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; }
-        
-        #add-step-btn { width: 100%; background: #333; color: white; padding: 12px; margin-top: 15px; transition: background 0.2s; }
-        #add-step-btn.updating { background: #4CAF50; } 
-        
-        #cancel-step-edit { 
-            background: none; color: #888; text-decoration: underline; font-size: 0.8rem; 
-            cursor: pointer; display: none; 
-        }
+/* Hover + focus states */
+.type-select:hover, select:hover {
+  border-color: #9ca3af;    /* Tailwind gray-400 */
+}
+.type-select:focus, select:focus {
+  border-color: #2563eb;    /* Tailwind blue-600 */
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+  outline: none;
+}
 
-        #save-recipe-btn { background: #FF4444; color: white; padding: 10px 20px; border-radius: 20px; float: right; }
-        #cancel-edit-btn { background: #999; color: white; padding: 10px 20px; border-radius: 20px; float: right; margin-right: 10px; display: none; }
-        
-        /* --- TIMELINE --- */
-        .step-list { display: flex; flex-direction: column; gap: 10px; }
-        .timeline-item {
-            display: flex; background: white; border: 1px solid var(--border);
-            border-radius: 8px; overflow: hidden; position: relative;
-        }
-        .color-bar { width: 12px; flex-shrink: 0; }
-        .timeline-content { padding: 12px 15px; flex-grow: 1; }
-        .step-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
-        .step-title { font-weight: 700; font-size: 0.95rem; }
-        .step-time { font-family: monospace; font-size: 1.1rem; font-weight: 600; color: #333; }
-        .step-details { font-size: 0.85rem; color: #555; margin-top: 4px; }
-        
-        .action-btn { background: none; border: none; font-size: 1.1rem; padding: 0 10px; cursor: pointer; color: #ccc; }
-        .edit-btn:hover { color: #333; }
-        .delete-btn:hover { color: #FF4444; }
-        .actions { display: flex; align-items: center; padding-right: 5px; }
+.grid-2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
+.grid-3 > .grid-2 {
+  grid-column: span 3; /* force full width */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.push-top{margin-top:8px}
+.flex{flex:1}
 
-        /* --- LIBRARY --- */
-        .search-container { margin-bottom: 20px; }
-        #searchInput {
-            width: 100%; padding: 15px; border: 2px solid var(--border); border-radius: 12px; font-size: 1rem;
-            background: white no-repeat 96% center;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23999" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>');
-        }
+.actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+.btn{
+  appearance:none; border:0; border-radius:999px; padding:8px 12px; cursor:pointer;
+  background:var(--ink); color:#fff; font-size:13px; font-weight:500;
+}
+.btn.outline{background:#fff; color:#111; border:1px solid #e5e7eb}
+.btn.warn{background:#ef4444}
+.btn.full{width:100%}
 
-        .library-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;
-        }
-        .saved-recipe-card {
-            background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px;
-            transition: transform 0.2s; position: relative; cursor: pointer;
-        }
-        .saved-recipe-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-color: #333; }
-        .saved-header h3 { margin: 0; font-size: 1.1rem; color: var(--primary); }
-        .saved-meta { font-size: 0.85rem; color: #666; margin-top: 5px; }
-        .saved-tags { display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
-        .tag { font-size: 0.7rem; padding: 4px 8px; border-radius: 4px; background: #eee; font-weight: 600; }
-        .card-rating { color: #FFD700; font-size: 0.9rem; float: right; }
-        
-        .delete-recipe-btn { 
-            position: absolute; top: 15px; right: 15px; background: none; 
-            color: #ff4444; font-size: 1.2rem; padding: 0; z-index: 10;
-        }
+.num-wide{min-width:84px} /* ensures mins/secs fully visible */
+.muted{color:var(--muted)}
 
-        /* --- STAR RATING --- */
-        .star-rating { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 5px; }
-        .star-rating input { display: none; }
-        .star-rating label { cursor: pointer; font-size: 1.5rem; color: #ddd; margin: 0; }
-        .star-rating input:checked ~ label, .star-rating label:hover, .star-rating label:hover ~ label { color: #FFD700; }
+/* Star Rating */
+.star-rating { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 5px; }
+.star-rating input { display: none; }
+.star-rating label { cursor: pointer; font-size: 1.5rem; color: #ddd; margin: 0; }
+.star-rating input:checked ~ label, .star-rating label:hover, .star-rating label:hover ~ label { color: #FFD700; }
 
-        /* Helpers */
-        .bg-yellow { background-color: #FCDF87; } .bg-blue { background-color: #B2DFDB; }
-        .bg-red { background-color: #FFCDD2; } .bg-purple { background-color: #E1BEE7; }
-        .bg-gray { background-color: #EEEEEE; } .bg-brown { background-color: #D7CCC8; }
-        .selected { transform: scale(1.1); border: 2px solid #333; }
-        .color-dot { width: 25px; height: 25px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
-        .color-picker { display: flex; gap: 10px; margin-top: 5px; }
-    </style>
+/* Steps list */
+.steps-list{display:flex; flex-direction:column; gap:10px}
+.step{
+  position:relative; display:flex; gap:10px; padding:10px 12px 12px 12px;
+  background:#fff; border:1px solid #eee; border-radius:10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+.step .color-bar{
+  width:16px; border-radius:6px; background:#ddd; align-self:stretch;
+}
+.step .content{flex:1}
+.step .title{font-weight:600; font-size:14px}
+.step .meta{font-size:16px; color:#374151; margin-top:2px; font-family:monospace}
+.step .notes{font-size:12px; color:#111; margin-top:10px; line-height:1.35}
+
+.step .row-controls{
+  display:none; margin-top:8px; gap:8px;
+}
+.step:hover .row-controls{display:flex}
+.step .row-controls .btn{padding:6px 10px; font-size:12px}
+
+/* Modal */
+.modal-backdrop{
+  position:fixed; inset:0; background:rgba(0,0,0,0.35);
+  display:grid; place-items:center; z-index:999;
+}
+.modal{width:min(700px, 92vw)}
+.type-row {
+  display: grid;
+  grid-template-columns: 1fr 55px 70px auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.type-row input[type="text"] {
+  margin-top: 0;
+}
+.type-row input[type="color"] {
+  border: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 6px;
+  margin-top: 0;
+}
+.type-row input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.type-row input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 6px;
+}
+.type-row .btn {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.type-row .btn.delete {
+  background: #ef4444;
+  width: auto;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+.type-row input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Library Grid */
+.library-container{margin-top:32px}
+.search-box{
+  width:100%; padding:12px 16px; border-radius:10px; margin-bottom:16px;
+  border:1px solid #e5e7eb; background:#fff; font-size:14px;
+}
+.library-grid{
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px;
+}
+.saved-card{
+  background:var(--card); border:1px solid var(--stroke);
+  border-radius:12px; padding:16px; cursor:pointer;
+  transition:transform 0.2s, box-shadow 0.2s;
+  position:relative;
+}
+.saved-card:hover{
+  transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.1);
+  border-color:var(--ink);
+}
+.saved-card h4{margin:0; font-size:15px; color:var(--ink)}
+.saved-meta{font-size:12px; color:var(--muted); margin-top:4px}
+.saved-tags{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap}
+.tag{font-size:11px; padding:4px 8px; border-radius:6px; background:#f3f4f6; font-weight:600}
+.card-rating{color:#FFD700; font-size:14px; float:right}
+.delete-card-btn{
+  position:absolute; top:12px; right:12px; background:none; border:none;
+  color:#ef4444; font-size:18px; cursor:pointer; padding:4px 8px;
+  line-height:1; z-index:10;
+}
+.delete-card-btn:hover{color:#dc2626}
+  </style>
 </head>
 <body>
-
-    <header>
-        <h1>
-            <span class="logo-icon">☕</span> The Daily Brew
-            <div style="margin-left:auto; display:flex; gap:10px;">
-                <button id="cancel-edit-btn">Cancel</button>
-                <button id="save-recipe-btn">Save Recipe</button>
-            </div>
-        </h1>
+  <div class="app-container">
+    <header class="topbar">
+      <div class="brand">
+        <h1>Bean Stack <span style="font-weight:400; font-size:12px; font-style: italic;"></span></h1>
+      </div>
+      <div class="actions">
+        <button class="btn outline" id="btnImportRecipes">Import</button>
+        <button class="btn outline" id="btnCancelEdit" style="display:none">Cancel</button>
+        <button class="btn" id="btnSaveRecipe">Save Recipe</button>
+      </div>
     </header>
 
-    <div class="main-container">
-        
-        <div class="left-col">
-            
-            <div class="card" id="details-card">
-                <div class="card-header">Details</div>
-                <div style="margin-bottom: 15px;">
-                    <label>Bean Name</label>
-                    <input type="text" id="beanName" placeholder="e.g. Ethiopia Yirgacheffe" autocomplete="off">
-                </div>
-                <div class="grid-2">
-                    <div>
-                        <label>Recipe Name</label>
-                        <input type="text" id="recipeName" placeholder="Morning V60">
-                    </div>
-                    <div>
-                        <label>Method</label>
-                        <input type="text" id="brewer" list="methodSuggestions" placeholder="Select" autocomplete="off">
-                        <datalist id="methodSuggestions">
-                            <option value="V60"></option>
-                            <option value="Aeropress"></option>
-                            <option value="Inverted Aeropress"></option>
-                            <option value="French Press"></option>
-                            <option value="Moka Pot"></option>
-                            <option value="Chemex"></option>
-                            <option value="Cold Brew"></option>
-                            <option value="Siphon"></option>
-                        </datalist>
-                    </div>
-                </div>
-                <br>
-                <div class="grid-3">
-                    <div><label>Coffee (g)</label><input type="number" id="coffeeGrams" value="15" oninput="calcRatio()"></div>
-                    <div><label>Water (g)</label><input type="number" id="waterGrams" value="240" oninput="calcRatio()"></div>
-                    <div><label>Temp (°C)</label><input type="number" id="temp" placeholder="92"></div>
-                </div>
-                <br>
-                <div class="grid-2">
-                    <div><label>Ratio 1 :</label><input type="text" id="ratioDisplay" readonly style="background:#eee; color:#666;"></div>
-                    <div><label>Grind</label><input type="text" id="grindSize" placeholder="18 Clicks"></div>
-                </div>
-            </div>
+    <main class="grid">
+      <!-- LEFT COLUMN -->
+      <section class="left-col">
+        <div class="card">
+          <h3>Recipe Details</h3>
+          <div class="grid-2">
+            <label>Bean Name
+              <input id="beanName" type="text" placeholder="e.g. Ethiopia Yirgacheffe">
+            </label>
+            <label>Recipe Name
+              <input id="recipeName" type="text" placeholder="My V60 Recipe">
+            </label>
+          </div>
+          <div class="grid-2 push-top">
+            <label>Brewer
+              <input id="recipeBrewer" type="text" placeholder="V60 / AeroPress / Chemex">
+            </label>
+            <label>Grind Size
+              <input id="recipeGrind" type="text" placeholder="e.g. 24 clicks, medium-fine">
+            </label>
+          </div>
 
-            <div class="card" id="step-form-card">
-                <div class="card-header">
-                    <span id="step-card-title">Add Step</span>
-                    <button id="cancel-step-edit">Cancel Edit</button>
-                </div>
-                
-                <div class="grid-2">
-                    <div>
-                        <label>Type</label>
-                        <select id="stepType">
-                            <option value="Pour">Pour</option><option value="Bloom">Bloom</option>
-                            <option value="Steep">Steep</option>
-                            <option value="Agitate">Agitate</option><option value="Wait">Wait</option>
-                            <option value="Drawdown">Drawdown</option><option value="Prep">Prep</option>
-                        </select>
-                    </div>
-                    <div><label>Label</label><input type="text" id="stepLabel" placeholder="Step Name"></div>
-                </div>
-                <br>
-                <label>Color</label>
-                <div class="color-picker" id="colorPicker">
-                    <div class="color-dot bg-blue selected" data-color="bg-blue"></div>
-                    <div class="color-dot bg-yellow" data-color="bg-yellow"></div>
-                    <div class="color-dot bg-red" data-color="bg-red"></div>
-                    <div class="color-dot bg-purple" data-color="bg-purple"></div>
-                    <div class="color-dot bg-brown" data-color="bg-brown"></div>
-                </div>
-                <br>
-                <div class="grid-2">
-                    <div>
-                        <label>Start (m:s)</label>
-                        <div style="display:flex; gap:5px;"><input type="number" id="startMin" placeholder="0"><input type="number" id="startSec" placeholder="00"></div>
-                    </div>
-                    <div>
-                        <label>End (m:s)</label>
-                        <div style="display:flex; gap:5px;"><input type="number" id="endMin" placeholder="0"><input type="number" id="endSec" placeholder="00"></div>
-                    </div>
-                </div>
-                <br>
-                <label>Target Weight</label><input type="number" id="stepWeight" placeholder="Optional (g)">
-                <br><br>
-                
-                <div class="grid-2" style="align-items: center; margin-bottom: 15px;">
-                    <label style="margin:0;">Rate this Brew</label>
-                    <div class="star-rating">
-                        <input type="radio" id="star5" name="rating" value="5"><label for="star5">★</label>
-                        <input type="radio" id="star4" name="rating" value="4"><label for="star4">★</label>
-                        <input type="radio" id="star3" name="rating" value="3"><label for="star3">★</label>
-                        <input type="radio" id="star2" name="rating" value="2"><label for="star2">★</label>
-                        <input type="radio" id="star1" name="rating" value="1"><label for="star1">★</label>
-                    </div>
-                </div>
+          <div class="grid-3 push-top">
+            <label>Coffee (g)
+              <input id="recipeDose" type="number" min="0" step="1" value="18">
+            </label>
+            <label>Water (g)
+              <input id="recipeWater" type="number" min="0" step="1" value="300">
+            </label>
+            <label>Temp (°C)
+              <input id="recipeTemp" type="number" min="0" step="1" value="94">
+            </label>
+          </div>
 
-                <label>Notes</label><textarea id="stepNotes" rows="2"></textarea>
-                <button id="add-step-btn">Add Step</button>
+          <div class="grid-2 push-top" style="align-items:center">
+            <label style="margin:0">Ratio 1 :
+              <input id="recipeRatio" type="text" readonly style="background:#f9fafb; margin-top:6px">
+            </label>
+            <div>
+              <label style="margin:0">Rate this Brew</label>
+              <div class="star-rating" style="margin-top:4px">
+                <input type="radio" id="star5" name="rating" value="5"><label for="star5">★</label>
+                <input type="radio" id="star4" name="rating" value="4"><label for="star4">★</label>
+                <input type="radio" id="star3" name="rating" value="3"><label for="star3">★</label>
+                <input type="radio" id="star2" name="rating" value="2"><label for="star2">★</label>
+                <input type="radio" id="star1" name="rating" value="1"><label for="star1">★</label>
+              </div>
             </div>
-
-            <!-- Coffee Beans Tracker -->
-            <div class="card" id="beans-tracker-card">
-                <div class="card-header">☕ Coffee Beans I've Tried</div>
-                <div style="margin-bottom: 15px;">
-                    <label>Bean Name</label>
-                    <input type="text" id="trackedBeanName" placeholder="e.g. Ethiopia Yirgacheffe" autocomplete="off">
-                </div>
-                <div class="grid-2">
-                    <div>
-                        <label>Origin</label>
-                        <input type="text" id="trackedOrigin" placeholder="e.g. Ethiopia" autocomplete="off">
-                    </div>
-                    <div>
-                        <label>Roaster</label>
-                        <input type="text" id="trackedRoaster" placeholder="e.g. Blue Bottle" autocomplete="off">
-                    </div>
-                </div>
-            
-                <div class="grid-2" style="align-items: center; margin-top: 15px;">
-                    <label style="margin:0;">Rating</label>
-                    <div class="star-rating">
-                        <input type="radio" id="bean-star5" name="bean-rating" value="5">
-                        <label for="bean-star5">★</label>
-                        <input type="radio" id="bean-star4" name="bean-rating" value="4">
-                        <label for="bean-star4">★</label>
-                        <input type="radio" id="bean-star3" name="bean-rating" value="3">
-                        <label for="bean-star3">★</label>
-                        <input type="radio" id="bean-star2" name="bean-rating" value="2">
-                        <label for="bean-star2">★</label>
-                        <input type="radio" id="bean-star1" name="bean-rating" value="1">
-                        <label for="bean-star1">★</label>
-                    </div>
-                </div>
-                <div style="margin-top: 15px;">
-                    <label>Notes</label>
-                    <textarea id="trackedNotes" rows="2" placeholder="Your thoughts on this bean..."></textarea>
-                </div>
-                <button id="add-bean-btn" style="width: 100%; background: #333; color: white; padding: 12px; margin-top: 15px;">Add Bean</button>
-                <button id="cancel-bean-edit" style="background: none; color: #888; text-decoration: underline; font-size: 0.8rem; cursor: pointer; display: none; width: 100%; margin-top: 5px;">Cancel</button>
-            </div>
+          </div>
         </div>
 
-        <div class="right-col">
-            <div class="card" style="min-height: 500px;">
-                <div class="card-header">Timeline</div>
-                <div id="timeline-container" class="step-list">
-                    <div style="text-align:center; color:#ccc; margin-top:50px;" id="empty-state">No steps added.</div>
-                </div>
+        <div class="card">
+          <div class="card-head">
+            <h3 id="stepCardTitle">Add Step</h3>
+            <div style="display:flex; gap:8px; align-items:center">
+              <button class="btn outline" id="btnEditTypes" style="font-size:11px; padding:4px 10px">Manage types</button>
+              <button class="btn outline" id="btnCancelStep" style="display:none; font-size:11px; padding:4px 10px">Cancel</button>
             </div>
-        </div>
-    </div>
+          </div>
 
+          <div class="grid-2">
+            <label>Type
+              <select id="stepType" class="type-select"></select>
+            </label>
+            <label>Label
+              <input id="stepLabel" type="text" placeholder="e.g. Main pour">
+            </label>
+          </div>
+
+          <div class="grid-3 push-top">
+            <label>Color
+              <input id="stepColor" type="color" value="#fde68a">
+            </label>
+            <div class="grid-2">
+              <label>Start min
+                <input id="startMin" class="num-wide" type="number" min="0" step="1" value="0">
+              </label>
+              <label>Start sec
+                <input id="startSec" class="num-wide" type="number" min="0" step="1" value="0">
+              </label>
+            </div>
+            <div class="grid-2">
+              <label>End min
+                <input id="durMin" class="num-wide" type="number" min="0" step="1" value="0">
+              </label>
+              <label>End sec
+                <input id="durSec" class="num-wide" type="number" min="0" step="1" value="0">
+              </label>
+            </div>
+          </div>
+
+          <div class="grid-2 push-top">
+            <label>Target weight (g)
+              <input id="stepWeight" type="number" min="0" step="1" placeholder="Optional">
+            </label>
+            <label>Notes
+              <textarea id="stepNotes" placeholder="e.g. spiral pour"></textarea>
+            </label>
+          </div>
+
+          <button class="btn full push-top" id="btnAddStep">Add Step</button>
+        </div>
+
+        <div class="card">
+          <h3>☕ Coffee Beans I've Tried</h3>
+          <div style="margin-bottom: 12px;">
+            <label>Bean Name
+              <input id="trackedBeanName" type="text" placeholder="e.g. Ethiopia Yirgacheffe">
+            </label>
+          </div>
+          <div class="grid-2">
+            <label>Origin
+              <input id="trackedOrigin" type="text" placeholder="e.g. Ethiopia">
+            </label>
+            <label>Roaster (optional)
+              <input id="trackedRoaster" type="text" placeholder="e.g. Blue Bottle">
+            </label>
+          </div>
+          <div class="push-top">
+            <label>Notes (optional)
+              <textarea id="trackedNotes" rows="2" placeholder="Your thoughts on this bean..."></textarea>
+            </label>
+          </div>
+          <div class="grid-2 push-top" style="align-items:center">
+            <label style="margin:0">Rating</label>
+            <div class="star-rating">
+              <input type="radio" id="bean-star5" name="bean-rating" value="5"><label for="bean-star5">★</label>
+              <input type="radio" id="bean-star4" name="bean-rating" value="4"><label for="bean-star4">★</label>
+              <input type="radio" id="bean-star3" name="bean-rating" value="3"><label for="bean-star3">★</label>
+              <input type="radio" id="bean-star2" name="bean-rating" value="2"><label for="bean-star2">★</label>
+              <input type="radio" id="bean-star1" name="bean-rating" value="1"><label for="bean-star1">★</label>
+            </div>
+          </div>
+          <button class="btn full push-top" id="btnAddBean">Add Bean</button>
+          <button class="btn outline full" id="btnCancelBean" style="display:none; margin-top:8px">Cancel</button>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN -->
+      <section class="right-col">
+        <div class="card">
+          <div class="card-head">
+            <h3>Timeline</h3>
+            <div class="muted small">Hover to edit/delete</div>
+          </div>
+          <div id="stepsList" class="steps-list">
+            <div style="text-align:center; color:#ccc; margin-top:30px">No steps added.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Recipe Library -->
     <div class="library-container">
-        <h2>📚 Coffee Log <small style="font-size:0.8rem; color:#888; font-weight:normal;">`</small></h2>
-        <div class="search-container">
-            <input type="text" id="searchInput" placeholder="Search beans, methods, or notes...">
-        </div>
-        <div id="library-grid" class="library-grid">
-            <div style="color:#666;">Loading recipes...</div>
-        </div>
+      <h2>Recipe Library</h2>
+      <input type="text" id="searchRecipes" class="search-box" placeholder="Search recipes...">
+      <div id="recipesGrid" class="library-grid">
+        <div style="color:#999">Loading recipes...</div>
+      </div>
     </div>
 
+    <!-- Beans Collection -->
     <div class="library-container">
-        <h2>☕ My Beans Collection</h2>
-        <div class="search-container">
-            <input type="text" id="searchBeansInput" placeholder="Search beans by name, origin, or roaster...">
-        </div>
-        <div id="beans-library-grid" class="library-grid">
-            <div style="color:#666;">Loading beans...</div>
-        </div>
+      <h2>My Beans Collection</h2>
+      <input type="text" id="searchBeans" class="search-box" placeholder="Search beans...">
+      <div id="beansGrid" class="library-grid">
+        <div style="color:#999">Loading beans...</div>
+      </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, setDoc, doc, serverTimestamp, query, orderBy, onSnapshot, deleteDoc } 
-        from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    <footer class="footer muted" style="text-align:center; font-size:12px; margin-top:40px">
+      Made with ☕ by Mayank Jaiswal
+    </footer>
+  </div>
 
-        // ⚠️ ⚠️ ⚠️ PASTE YOUR API KEY BELOW ⚠️ ⚠️ ⚠️
-            const firebaseConfig = {
-            apiKey: "PASTE_YOUR_API_KEY_HERE", 
-            authDomain: "coffee-database-92533.firebaseapp.com",
-            projectId: "coffee-database-92533",
-            storageBucket: "coffee-database-92533.firebasestorage.app",
-            messagingSenderId: "788577377347",
-            appId: "1:788577377347:web:3ed7f39df2bfb7828348f6"
+  <!-- Import Modal -->
+  <div class="modal-backdrop" id="importModal" style="display:none">
+    <div class="modal card" style="width:min(760px, 92vw)">
+      <h3>Import Recipes</h3>
+      <p class="muted" style="font-size:12px; margin-top:-4px">Paste JSON below (an array of recipes, or a single recipe object). See format guide underneath.</p>
+      <textarea id="importTextarea" style="min-height:220px; font-family:monospace; font-size:12px;" placeholder='[
+  {
+    "name": "My V60 Recipe",
+    "bean": "Ethiopia Yirgacheffe",
+    "brewer": "V60",
+    "coffee": 18,
+    "water": 300,
+    "temp": 94,
+    "grind": "medium-fine",
+    "rating": 5,
+    "steps": [
+      { "type": "Pour", "label": "Bloom", "color": "#fde68F", "startMin": 0, "startSec": 0, "durMin": 0, "durSec": 30, "weight": 40, "notes": "Saturate evenly" }
+    ]
+  }
+]'></textarea>
+      <div id="importError" style="color:#ef4444; font-size:12px; margin-top:6px; display:none"></div>
+      <div id="importPreview" style="font-size:12px; color:#374151; margin-top:6px; display:none"></div>
+      <div class="actions">
+        <button class="btn" id="btnDoImport">Import</button>
+        <button class="btn outline" id="btnImportFromFile">Upload JSON File</button>
+        <input type="file" id="importFileInput" accept="application/json" style="display:none">
+        <span class="flex"></span>
+        <button class="btn outline" id="btnShowFormatGuide">Format Guide</button>
+        <button class="btn outline" id="btnCloseImport">Close</button>
+      </div>
+
+      <div id="formatGuide" style="display:none; margin-top:14px; border-top:1px solid #e5e7eb; padding-top:14px;">
+        <h4 style="margin:0 0 8px 0; font-size:14px;">JSON Format</h4>
+        <p style="font-size:12px; color:#374151; line-height:1.5;">
+          Give this structure to ChatGPT along with your recipes and ask it to convert them into this JSON format. Only <code>name</code> is required — everything else is optional and will default sensibly.
+        </p>
+        <pre style="background:#f3f4f6; padding:10px; border-radius:8px; font-size:11px; overflow:auto; max-height:260px;">[
+  {
+    "name": "Recipe name (required)",
+    "bean": "Bean name",
+    "brewer": "V60 / AeroPress / Chemex / etc",
+    "coffee": 18,
+    "water": 300,
+    "temp": 94,
+    "grind": "e.g. medium-fine, 24 clicks",
+    "rating": 5,
+    "steps": [
+      {
+        "type": "Pour",
+        "label": "Bloom",
+        "color": "#fde68F",
+        "startMin": 0,
+        "startSec": 0,
+        "durMin": 0,
+        "durSec": 30,
+        "weight": 40,
+        "notes": "Saturate grounds evenly"
+      }
+    ]
+  }
+]</pre>
+        <p style="font-size:12px; color:#374151;">
+          <strong>Tip:</strong> Ask ChatGPT: <em>"Convert my coffee recipes into this exact JSON array format: [paste the structure above], one object per recipe, times split into minutes/seconds."</em>
+        </p>
+        <p style="font-size:11px; color:#6b7280;">
+          Notes: <code>type</code> should match one of your step types (Pour, Wait, Swirl, Stir, Bloom, or any custom type you've added) — unrecognized types are still imported, just won't have a matching color preset. <code>color</code> is optional (hex code); if omitted it defaults to your Pour color. <code>weight</code> is grams, omit or set null if not applicable.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Types Manager Modal -->
+  <template id="typesModalTpl">
+    <div class="modal-backdrop">
+      <div class="modal card">
+        <h3>Manage Step Types</h3>
+        <div class="type-editor" id="typesEditor"></div>
+        <div class="actions">
+          <button class="btn" id="addTypeBtn">Add type</button>
+          <span class="flex"></span>
+          <button class="btn outline" id="closeTypesBtn">Close</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, setDoc, doc, serverTimestamp, query, orderBy, onSnapshot, deleteDoc } 
+    from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    import { firebaseConfig } from './firebase-config.js';
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // STATE
+    let steps = [];
+    let allRecipes = [];
+    let allBeans = [];
+    let editingStepIndex = null;
+    let editingRecipeId = null;
+    let editingBeanId = null;
+
+    // STEP TYPES with colors
+    const defaultTypes = [
+      { name: 'Pour', color: '#fde68F', showWeight: true },
+      { name: 'Wait', color: '#bfdbfe', showWeight: false },
+      { name: 'Swirl', color: '#d8b4fe', showWeight: false },
+      { name: 'Stir', color: '#fda4af', showWeight: false },
+      { name: 'Bloom', color: '#fcd34d', showWeight: true }
+    ];
+
+    let stepTypes = JSON.parse(localStorage.getItem('stepTypes')) || defaultTypes;
+
+    function saveTypes() {
+      localStorage.setItem('stepTypes', JSON.stringify(stepTypes));
+      renderTypeSelect();
+    }
+
+    function renderTypeSelect() {
+      const select = document.getElementById('stepType');
+      const currentValue = select.value;
+      select.innerHTML = stepTypes.map(t => 
+        `<option value="${t.name}">${t.name}</option>`
+      ).join('');
+      if (currentValue && stepTypes.find(t => t.name === currentValue)) {
+        select.value = currentValue;
+      }
+      updateColorAndWeight();
+    }
+
+    function updateColorAndWeight() {
+      const selectedType = stepTypes.find(t => t.name === document.getElementById('stepType').value);
+      if (selectedType) {
+        document.getElementById('stepColor').value = selectedType.color;
+        // Show/hide target weight based on step type
+        const weightField = document.getElementById('stepWeight').closest('label');
+        if (selectedType.showWeight) {
+          weightField.style.display = 'block';
+          weightField.parentElement.style.gridTemplateColumns = '1fr 1fr';
+        } else {
+          weightField.style.display = 'none';
+          weightField.parentElement.style.gridTemplateColumns = '1fr';
+        }
+      }
+    }
+
+    document.getElementById('stepType').addEventListener('change', updateColorAndWeight);
+
+    // MANAGE TYPES MODAL
+    document.getElementById('btnEditTypes').addEventListener('click', () => {
+      const template = document.getElementById('typesModalTpl');
+      const clone = template.content.cloneNode(true);
+      document.body.appendChild(clone);
+      
+      renderTypesEditor();
+      
+      document.getElementById('addTypeBtn').addEventListener('click', () => {
+        stepTypes.push({ name: 'New Type', color: '#a5f3fc', showWeight: false });
+        renderTypesEditor();
+      });
+      
+      document.getElementById('closeTypesBtn').addEventListener('click', () => {
+        document.querySelector('.modal-backdrop').remove();
+        saveTypes();
+      });
+    });
+
+    function renderTypesEditor() {
+      const editor = document.getElementById('typesEditor');
+      editor.innerHTML = stepTypes.map((type, idx) => `
+        <div class="type-row">
+          <input type="text" value="${type.name}" onchange="updateTypeName(${idx}, this.value)" placeholder="Type name">
+          <input type="color" value="${type.color}" onchange="updateTypeColor(${idx}, this.value)">
+          <label style="display:flex; align-items:center; gap:4px; margin:0; font-size:11px; white-space:nowrap">
+            <input type="checkbox" ${type.showWeight ? 'checked' : ''} onchange="updateTypeWeight(${idx}, this.checked)" style="width:auto; margin:0">
+            Weight
+          </label>
+          <button class="btn delete" onclick="deleteType(${idx})">Delete</button>
+        </div>
+      `).join('');
+    }
+
+    window.updateTypeName = (idx, name) => {
+      stepTypes[idx].name = name;
+    };
+
+    window.updateTypeColor = (idx, color) => {
+      stepTypes[idx].color = color;
+    };
+
+    window.updateTypeWeight = (idx, show) => {
+      stepTypes[idx].showWeight = show;
+    };
+
+    window.deleteType = (idx) => {
+      if (stepTypes.length <= 1) {
+        alert('You must have at least one step type');
+        return;
+      }
+      if (confirm(`Delete "${stepTypes[idx].name}"?`)) {
+        stepTypes.splice(idx, 1);
+        renderTypesEditor();
+      }
+    };
+
+    // Initialize
+    renderTypeSelect();
+
+    // RATIO CALC
+    function calcRatio() {
+      const coffee = parseFloat(document.getElementById('recipeDose').value) || 0;
+      const water = parseFloat(document.getElementById('recipeWater').value) || 0;
+      document.getElementById('recipeRatio').value = (coffee > 0 && water > 0) ? (water / coffee).toFixed(1) : "-";
+    }
+    document.getElementById('recipeDose').addEventListener('input', calcRatio);
+    document.getElementById('recipeWater').addEventListener('input', calcRatio);
+    calcRatio();
+
+    // RENDER STEPS
+    function renderSteps() {
+      const container = document.getElementById('stepsList');
+      if (steps.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:#ccc; margin-top:30px">No steps added.</div>';
+        return;
+      }
+
+      container.innerHTML = steps.map((step, idx) => {
+        const totalSecs = (step.startMin || 0) * 60 + (step.startSec || 0);
+        const durSecs = (step.durMin || 0) * 60 + (step.durSec || 0);
+        const formatTime = (s) => {
+          const m = Math.floor(s / 60);
+          const sec = s % 60;
+          return m > 0 ? `${m}:${sec.toString().padStart(2, '0')}` : `${sec}s`;
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        return `
+          <div class="step">
+            <div class="color-bar" style="background:${step.color}"></div>
+            <div class="content">
+              <div class="title"><span style="color:#9ca3af">${step.type}</span>${step.label ? ' <span style="font-style:italic">(' + step.label + ')</span>' : ''}</div>
+              <div class="meta">${formatTime(totalSecs)} → ${formatTime(totalSecs + durSecs)}${step.weight ? ' • ' + step.weight + 'g' : ''}</div>
+              ${step.notes ? `<div class="notes">${step.notes}</div>` : ''}
+              <div class="row-controls">
+                <button class="btn outline" onclick="editStep(${idx})">Edit</button>
+                <button class="btn warn" onclick="deleteStep(${idx})">Delete</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
 
-        // --- GLOBAL STATE ---
-        let steps = [];
-        let allRecipes = [];
-        let allBeans = [];
-        let selectedColor = 'bg-blue';
-        let editingId = null;        
-        let editingStepIndex = null;
-        let editingBeanId = null; 
+    // ADD/UPDATE STEP
+    document.getElementById('btnAddStep').addEventListener('click', () => {
+      const stepData = {
+        type: document.getElementById('stepType').value,
+        label: document.getElementById('stepLabel').value,
+        color: document.getElementById('stepColor').value,
+        startMin: parseInt(document.getElementById('startMin').value) || 0,
+        startSec: parseInt(document.getElementById('startSec').value) || 0,
+        durMin: parseInt(document.getElementById('durMin').value) || 0,
+        durSec: parseInt(document.getElementById('durSec').value) || 0,
+        weight: parseInt(document.getElementById('stepWeight').value) || null,
+        notes: document.getElementById('stepNotes').value
+      };
 
-        // 1. RATIO CALC
-        window.calcRatio = function() {
-            const c = parseFloat(document.getElementById('coffeeGrams').value) || 0;
-            const w = parseFloat(document.getElementById('waterGrams').value) || 0;
-            document.getElementById('ratioDisplay').value = (c > 0 && w > 0) ? (w / c).toFixed(1) : "-";
+      if (editingStepIndex !== null) {
+        steps[editingStepIndex] = stepData;
+        editingStepIndex = null;
+        document.getElementById('btnAddStep').textContent = 'Add Step';
+        document.getElementById('stepCardTitle').textContent = 'Add Step';
+        document.getElementById('btnCancelStep').style.display = 'none';
+      } else {
+        steps.push(stepData);
+      }
+
+      // Reset form
+      document.getElementById('stepLabel').value = '';
+      document.getElementById('startMin').value = '0';
+      document.getElementById('startSec').value = '0';
+      document.getElementById('durMin').value = '0';
+      document.getElementById('durSec').value = '0';
+      document.getElementById('stepWeight').value = '';
+      document.getElementById('stepNotes').value = '';
+      document.getElementById('stepColor').value = '#fde68F';
+      updateColorAndWeight();
+      
+      renderSteps();
+    });
+
+    document.getElementById('btnCancelStep').addEventListener('click', () => {
+      editingStepIndex = null;
+      document.getElementById('btnAddStep').textContent = 'Add Step';
+      document.getElementById('stepCardTitle').textContent = 'Add Step';
+      document.getElementById('btnCancelStep').style.display = 'none';
+      document.getElementById('stepLabel').value = '';
+      document.getElementById('startMin').value = '0';
+      document.getElementById('startSec').value = '0';
+      document.getElementById('durMin').value = '0';
+      document.getElementById('durSec').value = '0';
+      document.getElementById('stepWeight').value = '';
+      document.getElementById('stepNotes').value = '';
+      updateColorAndWeight();
+    });
+
+    window.editStep = (idx) => {
+      editingStepIndex = idx;
+      const step = steps[idx];
+      document.getElementById('stepType').value = step.type;
+      document.getElementById('stepLabel').value = step.label || '';
+      document.getElementById('stepColor').value = step.color;
+      document.getElementById('startMin').value = step.startMin || 0;
+      document.getElementById('startSec').value = step.startSec || 0;
+      document.getElementById('durMin').value = step.durMin || 0;
+      document.getElementById('durSec').value = step.durSec || 0;
+      document.getElementById('stepWeight').value = step.weight || '';
+      document.getElementById('stepNotes').value = step.notes || '';
+      
+      // Update weight visibility based on type
+      updateColorAndWeight();
+      
+      document.getElementById('btnAddStep').textContent = 'Update Step';
+      document.getElementById('stepCardTitle').textContent = 'Edit Step';
+      document.getElementById('btnCancelStep').style.display = 'inline-block';
+      document.querySelector('.left-col .card:nth-child(2)').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    window.deleteStep = (idx) => {
+      if (editingStepIndex === idx) {
+        editingStepIndex = null;
+        document.getElementById('btnAddStep').textContent = 'Add Step';
+        document.getElementById('btnCancelStep').style.display = 'none';
+      }
+      steps.splice(idx, 1);
+      renderSteps();
+    };
+
+    // SAVE RECIPE
+    document.getElementById('btnSaveRecipe').addEventListener('click', async () => {
+      const btn = document.getElementById('btnSaveRecipe');
+      const originalText = btn.textContent;
+      btn.textContent = "Saving...";
+      
+      const ratingEl = document.querySelector('input[name="rating"]:checked');
+      const ratingVal = ratingEl ? Number(ratingEl.value) : 0;
+
+      const recipeData = {
+        name: document.getElementById('recipeName').value || "Untitled",
+        bean: document.getElementById('beanName').value || "",
+        brewer: document.getElementById('recipeBrewer').value || "",
+        coffee: Number(document.getElementById('recipeDose').value) || 0,
+        water: Number(document.getElementById('recipeWater').value) || 0,
+        temp: Number(document.getElementById('recipeTemp').value) || 0,
+        grind: document.getElementById('recipeGrind').value || "",
+        rating: ratingVal,
+        steps: steps,
+        timestamp: serverTimestamp()
+      };
+
+      try {
+        if (editingRecipeId) {
+          await setDoc(doc(db, "recipes", editingRecipeId), recipeData);
+          alert("Recipe Updated! ✨");
+        } else {
+          await addDoc(collection(db, "recipes"), recipeData);
+          alert("Recipe Saved! ✨");
         }
-        calcRatio();
+        resetRecipeForm();
+        btn.textContent = originalText;
+      } catch(e) {
+        alert("Save Error: " + e.message);
+        btn.textContent = originalText;
+      }
+    });
 
-        // 2. COLOR PICKER
-        document.querySelectorAll('.color-dot').forEach(dot => {
-            dot.addEventListener('click', function() {
-                document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
-                this.classList.add('selected');
-                selectedColor = this.getAttribute('data-color');
-            });
-        });
+    document.getElementById('btnCancelEdit').addEventListener('click', resetRecipeForm);
 
-        // 3. ADD / UPDATE STEP LOGIC
-        document.getElementById('add-step-btn').addEventListener('click', function() {
-            const sMin = document.getElementById('startMin').value || 0;
-            const sSec = document.getElementById('startSec').value || 0;
-            const eMin = document.getElementById('endMin').value || 0;
-            const eSec = document.getElementById('endSec').value || 0;
-            const timeStr = `${sMin}:${sSec.toString().padStart(2,'0')} → ${eMin}:${eSec.toString().padStart(2,'0')}`;
+    function resetRecipeForm() {
+      editingRecipeId = null;
+      editingStepIndex = null;
+      
+      document.getElementById('recipeName').value = "";
+      document.getElementById('beanName').value = "";
+      document.getElementById('recipeBrewer').value = "";
+      document.getElementById('recipeDose').value = "18";
+      document.getElementById('recipeWater').value = "300";
+      document.getElementById('recipeTemp').value = "94";
+      document.getElementById('recipeGrind').value = "";
+      
+      const ratingEl = document.querySelector('input[name="rating"]:checked');
+      if(ratingEl) ratingEl.checked = false;
 
-            const stepData = {
-                id: Date.now(),
-                type: document.getElementById('stepType').value,
-                label: document.getElementById('stepLabel').value || document.getElementById('stepType').value,
-                color: selectedColor,
-                startMin: sMin, startSec: sSec, endMin: eMin, endSec: eSec,
-                timeDisplay: timeStr,
-                weight: document.getElementById('stepWeight').value ? ` · ${document.getElementById('stepWeight').value}g` : '',
-                weightRaw: document.getElementById('stepWeight').value, 
-                notes: document.getElementById('stepNotes').value
-            };
+      steps = [];
+      renderSteps();
+      calcRatio();
+      
+      document.getElementById('btnSaveRecipe').textContent = "Save Recipe";
+      document.getElementById('btnCancelEdit').style.display = 'none';
+      document.getElementById('btnAddStep').textContent = 'Add Step';
+      document.getElementById('btnCancelStep').style.display = 'none';
+      window.scrollTo(0, 0);
+    }
 
-            if (editingStepIndex !== null) {
-                // UPDATE EXISTING STEP (In Place)
-                steps[editingStepIndex] = stepData;
-                editingStepIndex = null; 
-                resetStepForm(false); 
-            } else {
-                // ADD NEW STEP
-                steps.push(stepData);
-                // Auto-chain: Next step starts where this one ended
-                resetStepForm(true, eMin, eSec);
-            }
+    // BEANS TRACKER
+    document.getElementById('btnAddBean').addEventListener('click', async () => {
+      const btn = document.getElementById('btnAddBean');
+      const originalText = btn.textContent;
+      
+      const beanName = document.getElementById('trackedBeanName').value.trim();
+      if (!beanName) {
+        alert('Please enter a bean name');
+        return;
+      }
 
-            renderBuilder();
-        });
+      btn.textContent = editingBeanId ? "Updating..." : "Saving...";
+      
+      const ratingEl = document.querySelector('input[name="bean-rating"]:checked');
+      const ratingVal = ratingEl ? Number(ratingEl.value) : 0;
 
-        function resetStepForm(chain = false, min = "", sec = "") {
-            document.getElementById('stepLabel').value = "";
-            document.getElementById('stepWeight').value = "";
-            document.getElementById('stepNotes').value = "";
-            
-            if (chain) {
-                document.getElementById('startMin').value = min;
-                document.getElementById('startSec').value = sec;
-            } else {
-                document.getElementById('startMin').value = "";
-                document.getElementById('startSec').value = "";
-            }
-            
-            document.getElementById('endMin').value = "";
-            document.getElementById('endSec').value = "";
-            
-            document.getElementById('add-step-btn').textContent = "Add Step";
-            document.getElementById('add-step-btn').classList.remove('updating');
-            document.getElementById('step-card-title').textContent = "Add Step";
-            document.getElementById('cancel-step-edit').style.display = 'none';
-            document.getElementById('step-form-card').classList.remove('step-edit-active');
-            editingStepIndex = null;
+      const beanData = {
+        name: beanName,
+        origin: document.getElementById('trackedOrigin').value.trim() || "",
+        roaster: document.getElementById('trackedRoaster').value.trim() || "",
+        notes: document.getElementById('trackedNotes').value.trim() || "",
+        rating: ratingVal,
+        timestamp: serverTimestamp()
+      };
+
+      try {
+        if (editingBeanId) {
+          await setDoc(doc(db, "beans", editingBeanId), beanData);
+        } else {
+          await addDoc(collection(db, "beans"), beanData);
         }
+        resetBeanForm();
+        btn.textContent = originalText;
+      } catch(e) {
+        alert("Save Error: " + e.message);
+        btn.textContent = originalText;
+      }
+    });
 
-        document.getElementById('cancel-step-edit').addEventListener('click', function() {
-            resetStepForm(false);
-        });
+    document.getElementById('btnCancelBean').addEventListener('click', resetBeanForm);
 
-        // 4. RENDER BUILDER (With Edit Buttons)
-        function renderBuilder() {
-            const container = document.getElementById('timeline-container');
-            container.innerHTML = '';
-            if(steps.length === 0) container.innerHTML = '<div style="text-align:center; color:#ccc; margin-top:50px;">No steps added.</div>';
-            
-            steps.forEach((step, index) => {
-                const el = document.createElement('div');
-                el.className = 'timeline-item';
-                el.innerHTML = `
-                    <div class="color-bar ${step.color}"></div>
-                    <div class="timeline-content">
-                        <div class="step-header"><span class="step-title">${step.label}</span></div>
-                        <div class="step-time">${step.timeDisplay} ${step.weight}</div>
-                        <div class="step-details">${step.notes}</div>
-                    </div>
-                    <div class="actions">
-                        <button class="action-btn edit-btn" onclick="editStep(${index})">✏️</button>
-                        <button class="action-btn delete-btn" onclick="removeStep(${index})">×</button>
-                    </div>`;
-                container.appendChild(el);
-            });
+    function resetBeanForm() {
+      editingBeanId = null;
+      document.getElementById('trackedBeanName').value = "";
+      document.getElementById('trackedOrigin').value = "";
+      document.getElementById('trackedRoaster').value = "";
+      document.getElementById('trackedNotes').value = "";
+      
+      const ratingEl = document.querySelector('input[name="bean-rating"]:checked');
+      if(ratingEl) ratingEl.checked = false;
+      
+      document.getElementById('btnAddBean').textContent = "Add Bean";
+      document.getElementById('btnCancelBean').style.display = 'none';
+    }
+
+    window.editBean = function(id) {
+      const bean = allBeans.find(b => b.id === id);
+      if (!bean) return;
+
+      document.getElementById('trackedBeanName').value = bean.name || "";
+      document.getElementById('trackedOrigin').value = bean.origin || "";
+      document.getElementById('trackedRoaster').value = bean.roaster || "";
+      document.getElementById('trackedNotes').value = bean.notes || "";
+
+      const stars = document.querySelectorAll('input[name="bean-rating"]');
+      stars.forEach(s => s.checked = false);
+      if(bean.rating) {
+        const radio = document.querySelector(`input[name="bean-rating"][value="${bean.rating}"]`);
+        if(radio) radio.checked = true;
+      }
+
+      editingBeanId = id;
+      document.getElementById('btnAddBean').textContent = "Update Bean";
+      document.getElementById('btnCancelBean').style.display = 'inline-block';
+      document.querySelector('.left-col .card:nth-child(3)').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    window.deleteBean = async (id) => {
+      if(confirm("Delete this bean from your collection?")) {
+        await deleteDoc(doc(db, "beans", id));
+        if(editingBeanId === id) resetBeanForm();
+      }
+    };
+
+    // LOAD RECIPES
+    const recipesQuery = query(collection(db, "recipes"), orderBy("timestamp", "desc"));
+    onSnapshot(recipesQuery, (snapshot) => {
+      allRecipes = [];
+      snapshot.forEach(d => allRecipes.push({ id: d.id, ...d.data() }));
+      renderRecipes(allRecipes);
+    });
+
+    function renderRecipes(recipes) {
+      const grid = document.getElementById('recipesGrid');
+      if (recipes.length === 0) {
+        grid.innerHTML = '<div style="color:#ccc">No recipes saved yet.</div>';
+        return;
+      }
+
+      grid.innerHTML = recipes.map(r => {
+        const ratio = r.water && r.coffee ? (r.water / r.coffee).toFixed(1) : '-';
+        const stars = "★".repeat(r.rating || 0) + "☆".repeat(5 - (r.rating || 0));
+        const stepCount = r.steps ? r.steps.length : 0;
+
+        return `
+          <div class="saved-card" onclick="loadRecipe('${r.id}')">
+            <button class="delete-card-btn" onclick="event.stopPropagation(); deleteRecipe('${r.id}')">×</button>
+            <div style="display:flex; justify-content:space-between">
+              <h4>${r.name}</h4>
+              <span class="card-rating">${stars}</span>
+            </div>
+            <div class="saved-meta">${r.bean || "Unknown Bean"}</div>
+            <div class="saved-tags">
+              <span class="tag">${r.brewer}</span>
+              <span class="tag">1:${ratio}</span>
+              <span class="tag">${stepCount} steps</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.loadRecipe = function(id) {
+      const r = allRecipes.find(x => x.id === id);
+      if (!r) return;
+
+      document.getElementById('beanName').value = r.bean || "";
+      document.getElementById('recipeName').value = r.name || "";
+      document.getElementById('recipeBrewer').value = r.brewer || "";
+      document.getElementById('recipeDose').value = r.coffee || 18;
+      document.getElementById('recipeWater').value = r.water || 300;
+      document.getElementById('recipeTemp').value = r.temp || 94;
+      document.getElementById('recipeGrind').value = r.grind || "";
+      calcRatio();
+
+      const stars = document.querySelectorAll('input[name="rating"]');
+      stars.forEach(s => s.checked = false);
+      if (r.rating) {
+        const radio = document.querySelector(`input[name="rating"][value="${r.rating}"]`);
+        if (radio) radio.checked = true;
+      }
+
+      steps = r.steps || [];
+      renderSteps();
+
+      editingRecipeId = id;
+      document.getElementById('btnSaveRecipe').textContent = "Update Recipe";
+      document.getElementById('btnCancelEdit').style.display = 'inline-block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.deleteRecipe = async (id) => {
+      if (confirm("Delete this recipe permanently?")) {
+        await deleteDoc(doc(db, "recipes", id));
+        if (editingRecipeId === id) resetRecipeForm();
+      }
+    };
+
+    document.getElementById('searchRecipes').addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase();
+      const filtered = allRecipes.filter(r =>
+        (r.name && r.name.toLowerCase().includes(term)) ||
+        (r.bean && r.bean.toLowerCase().includes(term)) ||
+        (r.brewer && r.brewer.toLowerCase().includes(term))
+      );
+      renderRecipes(filtered);
+    });
+
+    // LOAD BEANS
+    const beansQuery = query(collection(db, "beans"), orderBy("timestamp", "desc"));
+    onSnapshot(beansQuery, (snapshot) => {
+      allBeans = [];
+      snapshot.forEach(d => allBeans.push({ id: d.id, ...d.data() }));
+      renderBeans(allBeans);
+    });
+
+    function renderBeans(beans) {
+      const grid = document.getElementById('beansGrid');
+      if (beans.length === 0) {
+        grid.innerHTML = '<div style="color:#ccc">No beans tracked yet.</div>';
+        return;
+      }
+
+      grid.innerHTML = beans.map(b => {
+        const stars = "★".repeat(b.rating || 0) + "☆".repeat(5 - (b.rating || 0));
+        const originTag = b.origin ? `<span class="tag">${b.origin}</span>` : '';
+        const roasterTag = b.roaster ? `<span class="tag">${b.roaster}</span>` : '';
+
+        return `
+          <div class="saved-card" onclick="editBean('${b.id}')">
+            <button class="delete-card-btn" onclick="event.stopPropagation(); deleteBean('${b.id}')">×</button>
+            <div style="display:flex; justify-content:space-between">
+              <h4>${b.name}</h4>
+              <span class="card-rating">${stars}</span>
+            </div>
+            ${b.origin || b.roaster ? '<div class="saved-meta">' + (b.origin || '') + (b.origin && b.roaster ? ' • ' : '') + (b.roaster || '') + '</div>' : ''}
+            ${b.origin || b.roaster ? '<div class="saved-tags">' + originTag + roasterTag + '</div>' : ''}
+            ${b.notes ? '<div style="font-size:12px; color:#666; margin-top:8px; font-style:italic">"' + b.notes + '"</div>' : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    document.getElementById('searchBeans').addEventListener('input', (e) => {
+      const term = e.target.value.toLowerCase();
+      const filtered = allBeans.filter(b =>
+        (b.name && b.name.toLowerCase().includes(term)) ||
+        (b.origin && b.origin.toLowerCase().includes(term)) ||
+        (b.roaster && b.roaster.toLowerCase().includes(term)) ||
+        (b.notes && b.notes.toLowerCase().includes(term))
+      );
+      renderBeans(filtered);
+    });
+
+    // IMPORT RECIPES
+    const importModal = document.getElementById('importModal');
+
+    document.getElementById('btnImportRecipes').addEventListener('click', () => {
+      importModal.style.display = 'grid';
+      document.getElementById('importError').style.display = 'none';
+      document.getElementById('importPreview').style.display = 'none';
+    });
+
+    document.getElementById('btnCloseImport').addEventListener('click', () => {
+      importModal.style.display = 'none';
+    });
+
+    document.getElementById('btnShowFormatGuide').addEventListener('click', () => {
+      const guide = document.getElementById('formatGuide');
+      guide.style.display = guide.style.display === 'none' ? 'block' : 'none';
+    });
+
+    document.getElementById('btnImportFromFile').addEventListener('click', () => {
+      document.getElementById('importFileInput').click();
+    });
+
+    document.getElementById('importFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        document.getElementById('importTextarea').value = evt.target.result;
+      };
+      reader.readAsText(file);
+    });
+
+    function normalizeImportedRecipe(r) {
+      if (!r.name) throw new Error('A recipe is missing "name"');
+      return {
+        name: r.name,
+        bean: r.bean || "",
+        brewer: r.brewer || "",
+        coffee: Number(r.coffee) || 0,
+        water: Number(r.water) || 0,
+        temp: Number(r.temp) || 0,
+        grind: r.grind || "",
+        rating: Number(r.rating) || 0,
+        steps: Array.isArray(r.steps) ? r.steps.map(s => ({
+          type: s.type || "Pour",
+          label: s.label || "",
+          color: s.color || (stepTypes.find(t => t.name === (s.type || "Pour"))?.color) || "#fde68F",
+          startMin: Number(s.startMin) || 0,
+          startSec: Number(s.startSec) || 0,
+          durMin: Number(s.durMin) || 0,
+          durSec: Number(s.durSec) || 0,
+          weight: (s.weight === undefined || s.weight === null || s.weight === "") ? null : Number(s.weight),
+          notes: s.notes || ""
+        })) : [],
+        timestamp: serverTimestamp()
+      };
+    }
+
+    document.getElementById('btnDoImport').addEventListener('click', async () => {
+      const btn = document.getElementById('btnDoImport');
+      const errorBox = document.getElementById('importError');
+      const previewBox = document.getElementById('importPreview');
+      errorBox.style.display = 'none';
+      previewBox.style.display = 'none';
+
+      const raw = document.getElementById('importTextarea').value.trim();
+      if (!raw) {
+        errorBox.textContent = "Paste some JSON first.";
+        errorBox.style.display = 'block';
+        return;
+      }
+
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (e) {
+        errorBox.textContent = "Invalid JSON: " + e.message;
+        errorBox.style.display = 'block';
+        return;
+      }
+
+      const recipesArray = Array.isArray(parsed) ? parsed : [parsed];
+
+      let normalized;
+      try {
+        normalized = recipesArray.map(normalizeImportedRecipe);
+      } catch (e) {
+        errorBox.textContent = e.message;
+        errorBox.style.display = 'block';
+        return;
+      }
+
+      btn.textContent = "Importing...";
+      btn.disabled = true;
+
+      try {
+        for (const recipe of normalized) {
+          await addDoc(collection(db, "recipes"), recipe);
         }
+        previewBox.textContent = `✅ Imported ${normalized.length} recipe${normalized.length !== 1 ? 's' : ''} successfully!`;
+        previewBox.style.color = '#059669';
+        previewBox.style.display = 'block';
+        document.getElementById('importTextarea').value = '';
+        setTimeout(() => { importModal.style.display = 'none'; }, 1200);
+      } catch (e) {
+        errorBox.textContent = "Import failed: " + e.message;
+        errorBox.style.display = 'block';
+      }
 
-        // 5. EDIT STEP FUNCTION
-        window.editStep = function(index) {
-            const step = steps[index];
-            editingStepIndex = index; 
-
-            document.getElementById('stepType').value = step.type;
-            document.getElementById('stepLabel').value = step.label;
-            document.getElementById('stepWeight').value = step.weightRaw || "";
-            document.getElementById('stepNotes').value = step.notes;
-            
-            document.getElementById('startMin').value = step.startMin || 0;
-            document.getElementById('startSec').value = step.startSec || 0;
-            document.getElementById('endMin').value = step.endMin || 0;
-            document.getElementById('endSec').value = step.endSec || 0;
-
-            selectedColor = step.color;
-            document.querySelectorAll('.color-dot').forEach(d => {
-                d.classList.remove('selected');
-                if(d.getAttribute('data-color') === step.color) d.classList.add('selected');
-            });
-
-            document.getElementById('add-step-btn').textContent = "Update Step";
-            document.getElementById('add-step-btn').classList.add('updating');
-            document.getElementById('step-card-title').textContent = "Editing Step " + (index + 1);
-            document.getElementById('cancel-step-edit').style.display = 'inline-block';
-            document.getElementById('step-form-card').classList.add('step-edit-active');
-
-            document.getElementById('step-form-card').scrollIntoView({ behavior: 'smooth' });
-        };
-
-        window.removeStep = (idx) => { 
-            if(editingStepIndex === idx) resetStepForm(false); 
-            steps.splice(idx, 1); 
-            renderBuilder(); 
-        };
-
-        // 5B. BEANS TRACKER
-        document.getElementById('add-bean-btn').addEventListener('click', async () => {
-            const btn = document.getElementById('add-bean-btn');
-            const originalText = btn.textContent;
-            
-            const beanName = document.getElementById('trackedBeanName').value.trim();
-            if (!beanName) {
-                alert('Please enter a bean name');
-                return;
-            }
-
-            btn.textContent = editingBeanId ? "Updating..." : "Saving...";
-            
-            const ratingEl = document.querySelector('input[name="bean-rating"]:checked');
-            const ratingVal = ratingEl ? Number(ratingEl.value) : 0;
-
-            const beanData = {
-                name: beanName,
-                origin: document.getElementById('trackedOrigin').value.trim() || "",
-                roaster: document.getElementById('trackedRoaster').value.trim() || "",
-                notes: document.getElementById('trackedNotes').value.trim() || "",
-                rating: ratingVal,
-                timestamp: serverTimestamp()
-            };
-
-            try {
-                if (editingBeanId) {
-                    await setDoc(doc(db, "beans", editingBeanId), beanData);
-                } else {
-                    await addDoc(collection(db, "beans"), beanData);
-                }
-                resetBeanForm();
-                btn.textContent = originalText;
-            } catch(e) {
-                alert("Save Error: " + e.message);
-                btn.textContent = originalText;
-            }
-        });
-
-        document.getElementById('cancel-bean-edit').addEventListener('click', resetBeanForm);
-
-        function resetBeanForm() {
-            editingBeanId = null;
-            document.getElementById('trackedBeanName').value = "";
-            document.getElementById('trackedOrigin').value = "";
-            document.getElementById('trackedRoaster').value = "";
-            document.getElementById('trackedNotes').value = "";
-            
-            const ratingEl = document.querySelector('input[name="bean-rating"]:checked');
-            if(ratingEl) ratingEl.checked = false;
-            
-            document.getElementById('add-bean-btn').textContent = "Add Bean";
-            document.getElementById('cancel-bean-edit').style.display = 'none';
-            document.getElementById('beans-tracker-card').classList.remove('step-edit-active');
-        }
-
-        window.editBean = function(id) {
-            const bean = allBeans.find(b => b.id === id);
-            if (!bean) return;
-
-            document.getElementById('trackedBeanName').value = bean.name || "";
-            document.getElementById('trackedOrigin').value = bean.origin || "";
-            document.getElementById('trackedRoaster').value = bean.roaster || "";
-            document.getElementById('trackedNotes').value = bean.notes || "";
-
-            const stars = document.querySelectorAll('input[name="bean-rating"]');
-            stars.forEach(s => s.checked = false);
-            if(bean.rating) {
-                const radio = document.querySelector(`input[name="bean-rating"][value="${bean.rating}"]`);
-                if(radio) radio.checked = true;
-            }
-
-            editingBeanId = id;
-            document.getElementById('add-bean-btn').textContent = "Update Bean";
-            document.getElementById('cancel-bean-edit').style.display = 'inline-block';
-            document.getElementById('beans-tracker-card').classList.add('step-edit-active');
-            document.getElementById('beans-tracker-card').scrollIntoView({ behavior: 'smooth' });
-        };
-
-        window.deleteBean = async (id) => {
-            if(confirm("Delete this bean from your collection?")) {
-                await deleteDoc(doc(db, "beans", id));
-                if(editingBeanId === id) resetBeanForm();
-            }
-        };
-
-        // BEANS LIBRARY RENDERING
-        const beansQuery = query(collection(db, "beans"), orderBy("timestamp", "desc"));
-
-        onSnapshot(beansQuery, (snapshot) => {
-            allBeans = []; 
-            snapshot.forEach(doc => {
-                allBeans.push({ id: doc.id, ...doc.data() });
-            });
-            renderBeansLibrary(allBeans);
-        });
-
-        function renderBeansLibrary(beansToRender) {
-            const grid = document.getElementById('beans-library-grid');
-            grid.innerHTML = "";
-            
-            if(beansToRender.length === 0) {
-                grid.innerHTML = "<div style='color:#ccc; text-align:center;'>No beans tracked yet. Add your first coffee bean above!</div>";
-                return;
-            }
-
-            beansToRender.forEach(bean => {
-                const stars = "★".repeat(bean.rating || 0) + "☆".repeat(5 - (bean.rating || 0));
-                
-                const card = document.createElement('div');
-                card.className = "saved-recipe-card";
-                card.onclick = (e) => {
-                    if(!e.target.classList.contains('delete-recipe-btn')) editBean(bean.id);
-                };
-
-                const roasterTag = bean.roaster ? `<span class="tag">${bean.roaster}</span>` : '';
-                const originTag = bean.origin ? `<span class="tag">${bean.origin}</span>` : '';
-
-                card.innerHTML = `
-                    <div class="saved-header">
-                        <div style="display:flex; justify-content:space-between;">
-                            <h3>${bean.name}</h3>
-                            <span class="card-rating">${stars}</span>
-                        </div>
-                        ${bean.origin || bean.roaster ? '<div class="saved-meta">' + (bean.origin || '') + (bean.origin && bean.roaster ? ' • ' : '') + (bean.roaster || '') + '</div>' : ''}
-                        <button class="delete-recipe-btn" onclick="deleteBean('${bean.id}')">×</button>
-                    </div>
-                    ${bean.origin || bean.roaster ? '<div class="saved-tags">' + originTag + roasterTag + '</div>' : ''}
-                    ${bean.notes ? '<div style="font-size:0.85rem; color:#666; margin-top:10px; font-style:italic;">"' + bean.notes + '"</div>' : ''}
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        // Beans Search Filter
-        document.getElementById('searchBeansInput').addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            const filtered = allBeans.filter(b => 
-                (b.name && b.name.toLowerCase().includes(term)) ||
-                (b.origin && b.origin.toLowerCase().includes(term)) ||
-                (b.roaster && b.roaster.toLowerCase().includes(term)) ||
-                (b.notes && b.notes.toLowerCase().includes(term))
-            );
-            renderBeansLibrary(filtered);
-        });
-
-        // 6. SAVE RECIPE
-        document.getElementById('save-recipe-btn').addEventListener('click', async () => {
-            const btn = document.getElementById('save-recipe-btn');
-            const originalText = btn.textContent;
-            btn.textContent = "Saving...";
-            
-            const ratingEl = document.querySelector('input[name="rating"]:checked');
-            const ratingVal = ratingEl ? Number(ratingEl.value) : 0;
-
-            const recipeData = {
-                name: document.getElementById('recipeName').value || "Untitled",
-                bean: document.getElementById('beanName').value || "",
-                brewer: document.getElementById('brewer').value,
-                coffee: Number(document.getElementById('coffeeGrams').value),
-                water: Number(document.getElementById('waterGrams').value),
-                temp: Number(document.getElementById('temp').value),
-                grind: document.getElementById('grindSize').value,
-                rating: ratingVal,
-                steps: steps,
-                timestamp: serverTimestamp()
-            };
-
-            try {
-                if (editingId) {
-                    await setDoc(doc(db, "recipes", editingId), recipeData);
-                    alert("Recipe Updated! ✨");
-                } else {
-                    await addDoc(collection(db, "recipes"), recipeData);
-                }
-                resetFullForm();
-                btn.textContent = originalText;
-            } catch(e) {
-                alert("Save Error: " + e.message);
-                btn.textContent = originalText;
-            }
-        });
-
-        document.getElementById('cancel-edit-btn').addEventListener('click', resetFullForm);
-
-        function resetFullForm() {
-            editingId = null;
-            resetStepForm(false); 
-            document.getElementById('recipeName').value = "";
-            document.getElementById('beanName').value = "";
-            document.getElementById('brewer').value = "";
-            
-            const ratingEl = document.querySelector('input[name="rating"]:checked');
-            if(ratingEl) ratingEl.checked = false;
-
-            steps = []; 
-            renderBuilder();
-            
-            document.getElementById('save-recipe-btn').textContent = "Save Recipe";
-            document.getElementById('cancel-edit-btn').style.display = 'none';
-            document.getElementById('details-card').classList.remove('edit-mode-active');
-            window.scrollTo(0,0);
-        }
-
-        // 7. LIBRARY & LOAD
-        const q = query(collection(db, "recipes"), orderBy("timestamp", "desc"));
-
-        onSnapshot(q, (snapshot) => {
-            allRecipes = []; 
-            snapshot.forEach(doc => {
-                allRecipes.push({ id: doc.id, ...doc.data() });
-            });
-            renderLibrary(allRecipes);
-        });
-
-        window.loadForEdit = function(id) {
-            const r = allRecipes.find(x => x.id === id);
-            if(!r) return;
-
-            document.getElementById('beanName').value = r.bean || "";
-            document.getElementById('recipeName').value = r.name || "";
-            document.getElementById('brewer').value = r.brewer || "";
-            document.getElementById('coffeeGrams').value = r.coffee || 0;
-            document.getElementById('waterGrams').value = r.water || 0;
-            document.getElementById('temp').value = r.temp || 93;
-            document.getElementById('grindSize').value = r.grind || "";
-            calcRatio();
-
-            const stars = document.querySelectorAll('input[name="rating"]');
-            stars.forEach(s => s.checked = false);
-            if(r.rating) {
-                const radio = document.querySelector(`input[name="rating"][value="${r.rating}"]`);
-                if(radio) radio.checked = true;
-            }
-
-            steps = r.steps || [];
-            renderBuilder();
-
-            editingId = id;
-            document.getElementById('save-recipe-btn').textContent = "Update Recipe";
-            document.getElementById('cancel-edit-btn').style.display = 'inline-block';
-            document.getElementById('details-card').classList.add('edit-mode-active');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        };
-
-        function renderLibrary(recipesToRender) {
-            const grid = document.getElementById('library-grid');
-            grid.innerHTML = "";
-            
-            if(recipesToRender.length === 0) {
-                grid.innerHTML = "<div style='color:#ccc; text-align:center;'>No coffees found.</div>";
-                return;
-            }
-
-            recipesToRender.forEach(r => {
-                const ratio = (r.water / r.coffee).toFixed(1);
-                const stars = "★".repeat(r.rating || 0) + "☆".repeat(5 - (r.rating || 0));
-                const stepCount = r.steps ? r.steps.length : 0;
-                
-                const card = document.createElement('div');
-                card.className = "saved-recipe-card";
-                card.onclick = (e) => {
-                    if(!e.target.classList.contains('delete-recipe-btn')) loadForEdit(r.id);
-                };
-
-                card.innerHTML = `
-                    <div class="saved-header">
-                        <div style="display:flex; justify-content:space-between;">
-                            <h3>${r.name}</h3>
-                            <span class="card-rating">${stars}</span>
-                        </div>
-                        <div class="saved-meta">${r.bean || "Unknown Bean"}</div>
-                        <button class="delete-recipe-btn" onclick="deleteRecipe('${r.id}')">×</button>
-                    </div>
-                    <div class="saved-tags">
-                        <span class="tag">${r.brewer}</span>
-                        <span class="tag">1:${ratio}</span>
-                        <span class="tag">${stepCount} Steps</span>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        // Search Filter
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            const filtered = allRecipes.filter(r => 
-                (r.name && r.name.toLowerCase().includes(term)) ||
-                (r.bean && r.bean.toLowerCase().includes(term)) ||
-                (r.brewer && r.brewer.toLowerCase().includes(term))
-            );
-            renderLibrary(filtered);
-        });
-
-        // 8. DELETE RECIPE
-        window.deleteRecipe = async (id) => {
-            if(confirm("Delete this recipe permanently?")) {
-                await deleteDoc(doc(db, "recipes", id));
-                if(editingId === id) resetFullForm();
-            }
-        };
-
-    </script>
+      btn.textContent = "Import";
+      btn.disabled = false;
+    });
+  </script>
 </body>
 </html>
