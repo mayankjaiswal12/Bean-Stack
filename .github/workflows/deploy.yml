@@ -32,9 +32,15 @@ jobs:
 
       - name: Prepare deploy folder
         run: |
-          mkdir -p _site
-          cp -r . _site
-          rm -rf _site/.git _site/.github
+          mkdir -p /tmp/_site
+          shopt -s dotglob
+          for item in *; do
+            if [ "$item" != ".github" ] && [ "$item" != ".git" ]; then
+              cp -r "$item" /tmp/_site/
+            fi
+          done
+          rm -rf _site
+          mv /tmp/_site ./_site
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
