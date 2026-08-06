@@ -1,0 +1,4 @@
+irebase-config.js 
+.env 
+.env.local 
+.env.*.local 
