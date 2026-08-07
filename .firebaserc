@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "coffee-database-92533"
-  }
+  },
+  "targets": {
+    "coffee-database-92533": {
+      "hosting": {
+        "beanstack-target": [
+          "beanstack"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

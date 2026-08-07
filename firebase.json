@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "target": "beanstack-target",
     "public": "public",
     "ignore": [
       "firebase.json",
