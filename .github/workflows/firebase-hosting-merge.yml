@@ -10,12 +10,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test recipe generator
+        run: node --test
 
       - name: Create firebase-config.js from secret
+        env:
+          FIREBASE_CONFIG_JSON: ${{ secrets.FIREBASE_CONFIG_JSON }}
         run: |
-          cat > public/firebase-config.js << 'EOF'
-          export const firebaseConfig = ${{ secrets.FIREBASE_CONFIG_JSON }};
-          EOF
+          if [ -z "$FIREBASE_CONFIG_JSON" ]; then
+            echo '::error::Set the FIREBASE_CONFIG_JSON repository secret.'
+            exit 1
+          fi
+          printf 'export const firebaseConfig = %s;\n' "$FIREBASE_CONFIG_JSON" > public/firebase-config.js
+          node --check public/firebase-config.js
 
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:

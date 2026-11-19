@@ -13,8 +13,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test recipe generator
+        run: node --test
+      - name: Create Firebase web config
+        env:
+          FIREBASE_CONFIG_JSON: ${{ secrets.FIREBASE_CONFIG_JSON }}
+        run: |
+          if [ -z "$FIREBASE_CONFIG_JSON" ]; then
+            echo '::error::Set the FIREBASE_CONFIG_JSON repository secret.'
+            exit 1
+          fi
+          printf 'export const firebaseConfig = %s;\n' "$FIREBASE_CONFIG_JSON" > public/firebase-config.js
+          node --check public/firebase-config.js
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_COFFEE_DATABASE_92533 }}
           projectId: coffee-database-92533
+          target: beanstack-target
