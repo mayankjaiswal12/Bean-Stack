@@ -84,6 +84,45 @@ test('malformed replies retry once and key failures do not retry', async () => {
   assert.equal(badKey.calls.length, 1);
 });
 
+test('the key test verifies the same structured reply as recipe generation', async () => {
+  const usable = fakeClient([reply({ adjustment: 'none', delta: 0, why: 'Test passed.' })]);
+  await usable.client.testKey(settings);
+  const config = JSON.parse(usable.calls[0].options.body).generationConfig;
+  assert.equal(config.responseMimeType, 'application/json');
+  assert.deepEqual(config.responseJsonSchema.required, ['adjustment', 'delta', 'why']);
+
+  const wrongFormat = fakeClient([reply({ message: 'OK' })]);
+  await assert.rejects(wrongFormat.client.testKey(settings), /recipe format Bean Stack expects/);
+});
+
+test('legacy JSON settings rejected by a model retry with the documented response format', async () => {
+  const response = { adjustment: 'none', delta: 0, why: 'Keep the baseline.' };
+  const rejected = Response.json({ error: { message: 'Unknown name "responseJsonSchema" at generation_config.' } }, { status: 400 });
+  const { client, calls, waits } = fakeClient([rejected, reply(response), reply(response)]);
+  await client.testKey(settings);
+  assert.equal((await client.refine(settings, bean, baseline)).adjustment, 'none');
+  assert.deepEqual(waits, [12_000, 12_000]);
+  const alternative = JSON.parse(calls[1].options.body).generationConfig;
+  assert.equal(alternative.responseFormat.text.mimeType, 'APPLICATION_JSON');
+  assert.deepEqual(JSON.parse(calls[2].options.body).generationConfig, alternative);
+});
+
+test('API failures explain the status and omit secrets from provider error details', async () => {
+  const keyError = fakeClient([Response.json({ error: { details: [{ reason: 'API_KEY_INVALID' }] } }, { status: 400 })]);
+  await assert.rejects(keyError.client.testKey(settings), /did not accept this key \(HTTP 400\)/);
+  assert.equal(keyError.calls.length, 1);
+
+  const projectError = fakeClient([Response.json({
+    error: { status: 'FAILED_PRECONDITION', message: 'Project unavailable for test-key.' },
+  }, { status: 400 })]);
+  await assert.rejects(projectError.client.testKey(settings), error => {
+    assert.match(error.message, /project requirement.*HTTP 400.*Project unavailable/);
+    assert.doesNotMatch(error.message, /test-key/);
+    return true;
+  });
+  assert.equal(projectError.calls.length, 1);
+});
+
 test('settings persist in browser storage and can be removed', () => {
   const values = new Map();
   const storage = {

@@ -110,9 +110,14 @@ field('btnTestGemini').addEventListener('click', async () => {
   try {
     const settings = currentSettings();
     if (!settings.key) throw new Error('Enter a Gemini API key.');
-    settingsStatus.textContent = 'Checking Gemini key and model…';
-    await gemini.testKey(settings, { signal: controller.signal });
-    if (!controller.signal.aborted) settingsStatus.textContent = 'Gemini key and model worked.';
+    settingsStatus.textContent = `Testing the recipe response from ${settings.model}…`;
+    await gemini.testKey(settings, {
+      signal: controller.signal,
+      onRetry: seconds => {
+        if (!controller.signal.aborted) settingsStatus.textContent = `Gemini will retry in ${seconds} seconds.`;
+      },
+    });
+    if (!controller.signal.aborted) settingsStatus.textContent = `${settings.model} passed the recipe response test.`;
   } catch (error) {
     if (!controller.signal.aborted) settingsStatus.textContent = error.message;
   } finally {
