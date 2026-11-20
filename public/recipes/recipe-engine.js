@@ -73,7 +73,72 @@ export function buildBaseline(bean, targetId = defaultTarget) {
   };
 }
 
-const inRange = (value, [min, max]) => Number.isFinite(value) && value >= min && value <= max;
+const roundingTolerance = 1e-9;
+const inRange = (value, [min, max], tolerance = 0) =>
+  Number.isFinite(value) && value >= min - tolerance && value <= max + tolerance;
+const isWaterAddingStep = step => step.type === 'Bloom' || step.type === 'Pour';
+
+export function brewRatioOptions(targetId) {
+  const target = targets[targetId];
+  const [minimum, maximum] = kit.limits.ratio;
+  const presets = target.ratioPresets ?? Array.from(
+    { length: (maximum - minimum) * 2 + 1 }, (_, index) => minimum + index / 2,
+  );
+  const defaultRatio = (target.water + (target.ice ?? 0)) / target.coffee;
+  return [...new Set([...presets, defaultRatio])].sort((left, right) => left - right);
+}
+
+function roundGrams(weight, minimum = 0, maximum = Infinity) {
+  const rounded = Math.round(weight * 10);
+  const lowerBound = Math.ceil(minimum * 10 - roundingTolerance);
+  const upperBound = Math.floor(maximum * 10 + roundingTolerance);
+  return Math.min(upperBound, Math.max(lowerBound, rounded)) / 10;
+}
+
+export function applyBrewRatio(recipe, ratio, capacity) {
+  const target = Object.hasOwn(targets, recipe.target) && targets[recipe.target];
+  const { coffee, water, ice, steps } = recipe;
+  const [minimum, maximum] = kit.limits.ratio;
+  if (!target || !Number.isFinite(ratio) || ratio <= 0 || (!target.concentrate && !inRange(ratio, kit.limits.ratio))) {
+    throw new Error('Choose a supported ratio for this brew method.');
+  }
+  if (!inRange(coffee, kit.limits.coffee)) {
+    throw new Error(`Enter a coffee dose between ${kit.limits.coffee.join(' and ')} g before changing the ratio.`);
+  }
+
+  const total = target.concentrate ? roundGrams(coffee * ratio)
+    : roundGrams(coffee * ratio, coffee * minimum, coffee * maximum);
+  let hotWater = total;
+  let newIce = 0;
+  if (target.ice) {
+    const fraction = water / (water + ice);
+    const split = inRange(fraction, kit.limits.hotFraction, roundingTolerance) ? fraction : target.water / (target.water + target.ice);
+    const [minimumHot, maximumHot] = kit.limits.hotFraction;
+    hotWater = roundGrams(total * split, total * minimumHot, total * maximumHot);
+    newIce = roundGrams(total - hotWater);
+  }
+  if (recipe.target === 'aeropress_inverted' && capacity > 0 && hotWater > capacity) {
+    throw new Error('This ratio exceeds your inverted brewer capacity. Choose a lower ratio or reduce the coffee dose.');
+  }
+
+  const finalPour = steps.findLastIndex(isWaterAddingStep);
+  const previousWater = steps[finalPour]?.weight;
+  if (!Number.isFinite(previousWater) || previousWater <= 0) {
+    throw new Error('Add a water weight to the final pour or bloom before changing the ratio.');
+  }
+  let priorWeight = 0;
+  const scaledSteps = steps.map((step, index) => {
+    if (!isWaterAddingStep(step)) return step;
+    const weight = index === finalPour ? hotWater : roundGrams(step.weight / previousWater * hotWater);
+    if (!Number.isFinite(step.weight) || weight <= priorWeight || weight > hotWater) {
+      throw new Error('Set increasing water weights on all pours before changing the ratio.');
+    }
+    priorWeight = weight;
+    return { ...step, weight };
+  });
+
+  return { water: hotWater, ice: newIce, steps: recipeSteps(scaledSteps, newIce) };
+}
 
 export function validateRecipe(recipe, capacity) {
   const { coffee, water, ice, temp, clicks, steps } = recipe;
@@ -92,11 +157,11 @@ export function validateRecipe(recipe, capacity) {
     errors.push('Enter your inverted setup’s usable water capacity and keep the recipe within it.');
   }
   const total = water + ice;
-  if (target.ice && (!(ice > 0) || !inRange(water / total, kit.limits.hotFraction))) {
+  if (target.ice && (!(ice > 0) || !inRange(water / total, kit.limits.hotFraction, roundingTolerance))) {
     errors.push('Enter the ice weight. Hot water must be 55–70% of the combined water and ice.');
   }
   if (!target.ice && ice !== 0) errors.push('Choose an iced brew method to include ice.');
-  if (!target.concentrate && !inRange(total / coffee, kit.limits.ratio)) {
+  if (!target.concentrate && !inRange(total / coffee, kit.limits.ratio, roundingTolerance)) {
     errors.push('Total water and ice must be 14–18 times the coffee weight.');
   }
 
@@ -116,7 +181,7 @@ export function validateRecipe(recipe, capacity) {
       errors.push(`Unsupported step type: ${step.type}.`);
       break;
     }
-    if (step.type === 'Bloom' || step.type === 'Pour') {
+    if (isWaterAddingStep(step)) {
       if (!(step.weight > weight) || !Number.isFinite(step.weight) || step.weight > water + kit.limits.weightTolerance) {
         errors.push('Bloom and pour weights must increase up to the hot-water weight.');
         break;
@@ -145,10 +210,14 @@ export function mapRecipe(recipe) {
     water: recipe.water,
     temp: recipe.temp,
     grind: `${recipe.clicks} clicks, C3S`,
-    steps: recipe.steps.map((step, index) => {
-      if (index !== 0 || !recipe.ice) return { ...step };
-      const notes = step.notes.replace(/^Add [\d.]+ g ice to the serving vessel\.\s*/, '');
-      return { ...step, notes: `Add ${recipe.ice} g ice to the serving vessel. ${notes}`.trim() };
-    }),
+    steps: recipeSteps(recipe.steps, recipe.ice),
   };
+}
+
+function recipeSteps(steps, ice) {
+  return steps.map((step, index) => {
+    if (index !== 0 || !ice) return { ...step };
+    const notes = (step.notes ?? '').replace(/^Add [\d.]+ g ice to the serving vessel\.\s*/, '');
+    return { ...step, notes: `Add ${ice} g ice to the serving vessel. ${notes}`.trim() };
+  });
 }

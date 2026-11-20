@@ -1,258 +1,110 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Coffee Tracker</title>
-  <style>
-:root{
-  --bg:#f7f5f2;
-  --card:#ffffff;
-  --ink:#1a1a1a;
-  --muted:#6b7280;
-  --accent:#f59e0b;
-  --stroke:#e6d9c8;
-  --soft:#f3f4f6;
-  --gap:#e5e7eb;
-}
-
-*{box-sizing:border-box}
-html,body{height:100%}
-body{
-  margin:0; background:var(--bg); color:var(--ink);
-  font-family: ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial, Apple Color Emoji, Segoe UI Emoji;
-}
-
-.app-container{max-width:1120px; margin:24px auto; padding:0 16px}
-.topbar{display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:16px}
-h1{font-size:22px; margin:0}
-h2{font-size:18px; margin:24px 0 12px 0}
-.sub{color:var(--muted); font-size:13px}
-.small{font-size:12px; font-style: italic}
-.footer{margin:12px 0}
-
-.grid{
-  display:grid;
-  grid-template-columns: 360px 1fr; /* fixed left column to prevent bleed */
-  gap:10px;
-}
-@media (max-width: 900px){ .grid{ grid-template-columns: 1fr } }
-
-.card{
-  background:var(--card);
-  border:1px solid var(--stroke);
-  border-radius:14px; padding:14px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
-  margin-bottom:2px;
-}
-.card h3{margin:0 0 8px 0; font-size:16px}
-.card-head{display:flex; align-items:center; gap:12px; justify-content:space-between; margin-bottom:12px}
-
-label{font-size:12px; color:#374151; display:block}
-[hidden]{display:none!important}
-#generatedReferences,#generatedErrors,#beanGeneratorStatus{font-size:13px;line-height:1.5}
-#generatedErrors{color:#b91c1c}
-#generatedErrors:empty,#beanGeneratorStatus:empty{display:none}
-#trackedBrewMethods{min-width:0;border:1px solid var(--stroke);border-radius:8px;padding:6px 10px}
-#trackedBrewMethods legend{color:var(--muted);font-size:12px}
-#brewMethodChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 8px}
-#brewMethodChoices label{display:flex;align-items:center;gap:6px;min-height:38px}
-#brewMethodChoices input{flex:none;margin:0}
-#generatedBatch,#generatedBeanProfile{font-size:13px;line-height:1.5}
-#geminiSettings{max-width:420px;width:calc(100% - 32px);border:1px solid #e5e7eb;border-radius:12px;padding:20px}
-#geminiSettings::backdrop{background:rgba(17,24,39,.5)}
-#geminiSettings p,#generatedAiStatus,#generatedAiWhy{font-size:13px;line-height:1.5}
-#geminiSettings input[type="password"]{box-sizing:border-box;width:100%;margin-top:6px;padding:8px 10px;border:1px solid #e5e7eb;border-radius:10px}
-input[type="text"], input[type="number"], select, textarea{
-  width:100%; margin-top:6px; padding:8px 10px; border-radius:10px;
-  border:1px solid #e5e7eb; background:#fff; outline:none;
-}
-textarea{min-height:72px; resize:vertical}
-
-/* Style for type dropdown */
-.type-select, select {
-  appearance: none;        /* remove native browser arrow */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-
-  background-color: #fff;
-  border: 1px solid #d1d5db; /* Tailwind gray-300 */
-  border-radius: 0.5rem;     /* rounded corners */
-  padding: 6px 12px;
-  font-size: 12px;
-  line-height: 1.2;
-  color: #111827;           /* Tailwind gray-900 */
-  cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  
-  background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='20' viewBox='0 0 20 10' width='20' xmlns='http://www.w3.org/2000/svg'><polygon points='0,0 16,0 8,8'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 8px center;
-  background-size: 12px;
-  padding-right: 28px; /* space for arrow */
-}
-
-/* Hover + focus states */
-.type-select:hover, select:hover {
-  border-color: #9ca3af;    /* Tailwind gray-400 */
-}
-.type-select:focus, select:focus {
-  border-color: #2563eb;    /* Tailwind blue-600 */
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
-  outline: none;
-}
-
-.grid-2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-.grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
-.grid-3 > .grid-2 {
-  grid-column: span 3; /* force full width */
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.push-top{margin-top:8px}
-.flex{flex:1}
-
-.actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
-.btn{
-  appearance:none; border:0; border-radius:999px; padding:8px 12px; cursor:pointer;
-  background:var(--ink); color:#fff; font-size:13px; font-weight:500;
-}
-.btn.outline{background:#fff; color:#111; border:1px solid #e5e7eb}
-.btn.warn{background:#ef4444}
-.btn.full{width:100%}
-
-.num-wide{min-width:84px} /* ensures mins/secs fully visible */
-.muted{color:var(--muted)}
-
-/* Star Rating */
-.star-rating { display: flex; flex-direction: row-reverse; justify-content: flex-end; gap: 5px; }
-.star-rating input { display: none; }
-.star-rating label { cursor: pointer; font-size: 1.5rem; color: #ddd; margin: 0; }
-.star-rating input:checked ~ label, .star-rating label:hover, .star-rating label:hover ~ label { color: #FFD700; }
-
-/* Steps list */
-.steps-list{display:flex; flex-direction:column; gap:10px}
-.step{
-  position:relative; display:flex; gap:10px; padding:10px 12px 12px 12px;
-  background:#fff; border:1px solid #eee; border-radius:10px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-}
-.step .color-bar{
-  width:16px; border-radius:6px; background:#ddd; align-self:stretch;
-}
-.step .content{flex:1}
-.step .title{font-weight:600; font-size:14px}
-.step .meta{font-size:16px; color:#374151; margin-top:2px; font-family:monospace}
-.step .notes{font-size:12px; color:#111; margin-top:10px; line-height:1.35}
-
-.step .row-controls{
-  display:none; margin-top:8px; gap:8px;
-}
-.step:hover .row-controls,.step:focus-within .row-controls{display:flex}
-@media (hover:none){.step .row-controls{display:flex}}
-.step .row-controls .btn{padding:6px 10px; font-size:12px}
-
-/* Modal */
-.modal-backdrop{
-  position:fixed; inset:0; background:rgba(0,0,0,0.35);
-  display:grid; place-items:center; z-index:999;
-}
-.modal{width:min(700px, 92vw)}
-.type-row {
-  display: grid;
-  grid-template-columns: 1fr 55px 70px auto;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-.type-row input[type="text"] {
-  margin-top: 0;
-}
-.type-row input[type="color"] {
-  border: none;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  cursor: pointer;
-  border-radius: 6px;
-  margin-top: 0;
-}
-.type-row input[type="color"]::-webkit-color-swatch-wrapper {
-  padding: 0;
-}
-.type-row input[type="color"]::-webkit-color-swatch {
-  border: none;
-  border-radius: 6px;
-}
-.type-row .btn {
-  padding: 6px 10px;
-  font-size: 12px;
-}
-.type-row .btn.delete {
-  background: #ef4444;
-  width: auto;
-  padding: 6px 12px;
-  font-size: 12px;
-}
-.type-row input[type="checkbox"] {
-  width: auto;
-  margin: 0;
-  cursor: pointer;
-}
-
-/* Library Grid */
-.library-container{margin-top:32px}
-.search-box{
-  width:100%; padding:12px 16px; border-radius:10px; margin-bottom:16px;
-  border:1px solid #e5e7eb; background:#fff; font-size:14px;
-}
-.library-grid{
-  display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px;
-}
-.saved-card{
-  background:var(--card); border:1px solid var(--stroke);
-  border-radius:12px; padding:16px; cursor:pointer;
-  transition:transform 0.2s, box-shadow 0.2s;
-  position:relative;
-}
-.saved-card:hover{
-  transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,0.1);
-  border-color:var(--ink);
-}
-.saved-card h4{margin:0; font-size:15px; color:var(--ink)}
-.saved-meta{font-size:12px; color:var(--muted); margin-top:4px}
-.saved-tags{display:flex; gap:6px; margin-top:10px; flex-wrap:wrap}
-.tag{font-size:11px; padding:4px 8px; border-radius:6px; background:#f3f4f6; font-weight:600}
-.card-rating{color:#FFD700; font-size:14px; float:right}
-.delete-card-btn{
-  position:absolute; top:12px; right:12px; background:none; border:none;
-  color:#ef4444; font-size:18px; cursor:pointer; padding:4px 8px;
-  line-height:1; z-index:10;
-}
-.delete-card-btn:hover{color:#dc2626}
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Bean Stack is your personal specialty coffee brewing workspace.">
+  <meta name="theme-color" content="#f8f6f1">
+  <title>Bean Stack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;650;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap">
+  <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <div class="app-container">
-    <header class="topbar">
-      <div class="brand">
-        <h1>Bean Stack <span style="font-weight:400; font-size:12px; font-style: italic;"></span></h1>
+  <a href="#mainContent" class="skip-link">Skip to main content</a>
+  <div class="shell" id="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <a href="#overview" class="brand"><span class="brand-mark" data-icon="coffee"></span><span class="brand-name">Bean Stack</span></a>
+        <button class="icon-btn sidebar-toggle" id="collapseSidebar" aria-label="Collapse sidebar" title="Collapse sidebar" aria-expanded="true"><span data-icon="panel"></span></button>
+        <button class="icon-btn drawer-close" id="closeNavigation" aria-label="Close navigation"><span data-icon="close"></span></button>
       </div>
-      <div class="actions">
-        <button class="btn outline" id="btnImportRecipes">Import</button>
-        <button class="btn outline" id="btnGeminiSettings">AI settings</button>
-        <button class="btn outline" id="btnCancelEdit" style="display:none">Cancel</button>
-        <button class="btn" id="btnSaveRecipe">Save Recipe</button>
-      </div>
-    </header>
+      <button class="btn sidebar-cta" data-action="new-recipe" title="Create New Recipe"><span data-icon="plus"></span><span>Create New Recipe</span></button>
+      <nav class="side-nav" aria-label="Main navigation">
+        <a href="#overview" data-nav="overview" title="Overview"><span data-icon="overview"></span><span>Overview</span></a>
+        <a href="#recipes" data-nav="recipes" title="Brew Recipes"><span data-icon="book"></span><span>Brew Recipes</span></a>
+        <a href="#timer" data-nav="timer" title="Brew Timer"><span data-icon="timer"></span><span>Brew Timer</span></a>
+        <a href="#beans" data-nav="beans" title="My Beans"><span data-icon="bean"></span><span>My Beans</span></a>
+        <a href="#history" data-nav="history" title="Brew History"><span data-icon="history"></span><span>Brew History</span></a>
+        <a href="#analytics" data-nav="analytics" title="Analytics"><span data-icon="chart"></span><span>Analytics</span></a>
+        <a href="#assistant" data-nav="assistant" title="AI Coffee Assistant"><span data-icon="spark"></span><span>AI Coffee Assistant</span></a>
+        <a href="#settings" data-nav="settings" title="Settings"><span data-icon="settings"></span><span>Settings</span></a>
+      </nav>
+      <a href="#settings" class="sidebar-profile" title="Workspace settings"><span class="avatar">BS</span><span><strong>My workspace</strong><small>Settings</small></span></a>
+    </aside>
+    <button id="drawerBackdrop" class="drawer-backdrop" aria-label="Close navigation" hidden></button>
 
-    <main class="grid">
-      <!-- LEFT COLUMN -->
-      <section class="left-col">
-        <div class="card" id="recipeDetails">
-          <h3>Recipe Details</h3>
-          <div id="generatedRecipePanel" class="push-top" hidden>
+    <div class="workarea">
+      <header class="topbar">
+        <button class="icon-btn mobile-menu" id="openNavigation" aria-label="Open navigation" aria-controls="sidebar" aria-expanded="false"><span data-icon="menu"></span></button>
+        <div class="breadcrumb"><span>Workspace</span><span class="crumb-divider">/</span><strong id="pageTitle">Overview</strong></div>
+        <div class="top-actions">
+          <button type="button" class="global-search" id="openSearch" aria-label="Search recipes and beans"><span data-icon="search"></span><span>Search anything</span><kbd>⌘ K</kbd></button>
+          <button type="button" class="icon-btn quick-create" data-action="new-recipe" aria-label="Create New Recipe" title="Create New Recipe"><span data-icon="plus"></span></button>
+          <a class="avatar top-avatar" href="#settings" aria-label="Workspace settings">BS</a>
+        </div>
+      </header>
+
+      <main id="mainContent" class="page-content" tabindex="-1">
+        <section data-page="overview" class="page">
+          <div class="page-heading overview-heading">
+            <h1>Good morning.<br class="morning-break"> Ready for a better cup?</h1>
+            <p>Your coffee journey, one perfect brew at a time.</p>
+          </div>
+          <section class="brew-hero" aria-labelledby="heroTitle">
+            <div class="hero-copy"><span class="hero-icon" data-icon="coffee"></span><h2 id="heroTitle">Start brewing</h2><p>Follow your recipe, one pour at a time.</p><a class="btn hero-btn" href="#timer"><span data-icon="play"></span> Start Brewing</a></div>
+            <div class="hero-image" aria-hidden="true"></div>
+          </section>
+          <div class="metrics-grid" id="overviewMetrics" aria-label="Brew metrics">
+            <div class="metric"><span data-icon="coffee"></span><span>Total brews</span><strong id="metricBrews">—</strong></div>
+            <div class="metric"><span data-icon="book"></span><span>Saved recipes</span><strong id="metricRecipes">—</strong></div>
+            <div class="metric"><span data-icon="bean"></span><span>Coffee beans</span><strong id="metricBeans">—</strong></div>
+            <div class="metric"><span data-icon="star"></span><span>Average brew rating</span><strong id="metricRating">—</strong></div>
+          </div>
+          <div class="overview-columns">
+            <section class="panel activity-panel"><div class="section-heading"><h2>Recent brewing activity</h2><a class="text-link" href="#history">View journal</a></div><div id="recentBrews"></div></section>
+            <section class="panel"><div class="section-heading"><h2>Quick access</h2></div><div class="shortcut-list">
+              <button data-action="new-recipe"><span data-icon="plus"></span>Create a recipe</button>
+              <button data-action="new-bean"><span data-icon="bean"></span>Add a coffee bean</button>
+              <a href="#recipes"><span data-icon="book"></span>Browse recipes</a>
+              <a href="#timer"><span data-icon="timer"></span>Start a brew</a>
+            </div></section>
+          </div>
+          <div class="overview-columns recipe-highlights">
+            <section class="panel"><div class="section-heading"><h2>Last brewed recipe</h2></div><div id="lastBrew"></div></section>
+            <section class="panel"><div class="section-heading"><h2>Favorite recipe</h2></div><div id="favoriteBrew"></div></section>
+          </div>
+        </section>
+
+        <section data-page="recipes" class="page" hidden>
+          <div class="page-heading heading-actions"><div><h1>Brew Recipes</h1><p>Keep your favorite ways to brew close at hand.</p></div><button class="btn" data-action="new-recipe"><span data-icon="plus"></span> Create recipe</button></div>
+          <div class="collection-toolbar">
+            <label class="toolbar-search"><span data-icon="search"></span><span class="sr-only">Search recipes</span><input id="searchRecipes" type="search" placeholder="Search recipes"></label>
+            <label><span class="sr-only">Filter by brew method</span><select id="recipeMethodFilter"><option value="">All methods</option></select></label>
+            <label><span class="sr-only">Sort recipes</span><select id="recipeSort"><option value="newest">Newest</option><option value="rating">Highest rated</option><option value="name">Name</option></select></label>
+            <button class="btn outline" id="favoritesFilter" aria-pressed="false"><span data-icon="star"></span> Favorites</button>
+            <div class="segmented" aria-label="Recipe layout"><button class="icon-btn" data-view="grid" aria-label="Grid view" aria-pressed="true"><span data-icon="grid"></span></button><button class="icon-btn" data-view="list" aria-label="List view" aria-pressed="false"><span data-icon="list"></span></button></div>
+          </div>
+          <div id="recipesGrid" class="collection-grid" aria-live="polite"><div class="loading-card" aria-label="Loading recipes"></div></div>
+        </section>
+
+        <section data-page="editor" class="page" hidden>
+          <div class="page-heading heading-actions"><div><h1 id="editorTitle">Recipe editor</h1><p id="editorSubtitle">Set your brewing parameters and build the timeline.</p></div><div class="actions"><button class="btn outline" id="brewDraft"><span data-icon="play"></span> Brew this recipe</button><button class="btn outline" id="btnCancelEdit">Cancel</button><button class="btn" id="btnSaveRecipe">Save Recipe</button></div></div>
+          <div class="editor-grid">
+            <div class="editor-stack">
+              <div class="panel" id="recipeDetails">
+                <section class="form-section"><h2>Recipe information</h2>
+                  <div class="grid-2">
+                    <label>Recipe name<input id="recipeName" type="text" placeholder="Morning pour-over"></label>
+                    <label>Coffee bean<input id="beanName" type="text" list="beanNames" placeholder="Choose or enter a bean"><datalist id="beanNames"></datalist></label>
+                    <label id="recipeMethodLabel">Brew method<select id="recipeMethod"><option value="">Choose a method</option></select></label>
+                    <label>Brewer<input id="recipeBrewer" type="text" placeholder="V60, AeroPress, Chemex"></label>
+                  </div>
+                  <label class="push-top">Description<textarea id="recipeDescription" rows="2" placeholder="What makes this recipe worth brewing?"></textarea></label>
+                </section>
+                <section class="form-section"><h2>Brewing parameters</h2>
+          <div id="generatedRecipePanel" class="generated-panel" hidden>
             <p id="generatedBatch" class="muted" hidden></p>
             <label>Brew method
               <select id="generatedTarget"></select>
@@ -270,53 +122,18 @@ textarea{min-height:72px; resize:vertical}
             </label>
             <p id="generatedErrors" role="status" tabindex="-1"></p>
           </div>
-          <div class="grid-2">
-            <label>Bean Name
-              <input id="beanName" type="text" placeholder="e.g. Ethiopia Yirgacheffe">
-            </label>
-            <label>Recipe Name
-              <input id="recipeName" type="text" placeholder="My V60 Recipe">
-            </label>
-          </div>
-          <div class="grid-2 push-top">
-            <label>Brewer
-              <input id="recipeBrewer" type="text" placeholder="V60 / AeroPress / Chemex">
-            </label>
-            <label>Grind Size
-              <input id="recipeGrind" type="text" placeholder="e.g. 24 clicks, medium-fine">
-            </label>
-          </div>
 
-          <div class="grid-3 push-top">
-            <label>Coffee (g)
-              <input id="recipeDose" type="number" min="0" step="1" value="18">
-            </label>
-            <label>Water (g)
-              <input id="recipeWater" type="number" min="0" step="1" value="300">
-            </label>
-            <label>Temp (°C)
-              <input id="recipeTemp" type="number" min="0" step="1" value="94">
-            </label>
-          </div>
-
-          <div class="grid-2 push-top" style="align-items:center">
-            <label style="margin:0">Ratio 1 :
-              <input id="recipeRatio" type="text" readonly style="background:#f9fafb; margin-top:6px">
-            </label>
-            <div>
-              <label style="margin:0">Rate this Brew</label>
-              <div class="star-rating" style="margin-top:4px">
-                <input type="radio" id="star5" name="rating" value="5"><label for="star5">★</label>
-                <input type="radio" id="star4" name="rating" value="4"><label for="star4">★</label>
-                <input type="radio" id="star3" name="rating" value="3"><label for="star3">★</label>
-                <input type="radio" id="star2" name="rating" value="2"><label for="star2">★</label>
-                <input type="radio" id="star1" name="rating" value="1"><label for="star1">★</label>
+                  <div class="grid-3 parameter-fields">
+                    <label>Coffee (g)<input id="recipeDose" type="number" min="0" step="0.1" value="18"></label>
+                    <label>Water (g)<input id="recipeWater" type="number" min="0" step="0.1" value="300"></label>
+                    <label>Temperature (°C)<input id="recipeTemp" type="number" min="0" step="1" value="94"></label>
+                    <label>Grind size<input id="recipeGrind" type="text" placeholder="14 clicks, C3S"></label>
+                    <label id="manualRatioLabel">Brew ratio, 1 to<input id="recipeRatio" type="text" readonly></label>
+                    <label id="generatedRatioLabel" hidden>Brew ratio<select id="generatedRatio"></select></label>
+                  </div>
+                </section>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
+              <section class="panel" id="stepEditor">
           <div class="card-head">
             <h3 id="stepCardTitle">Add Step</h3>
             <div style="display:flex; gap:8px; align-items:center">
@@ -358,19 +175,99 @@ textarea{min-height:72px; resize:vertical}
 
           <div class="grid-2 push-top">
             <label>Target weight (g)
-              <input id="stepWeight" type="number" min="0" step="1" placeholder="Optional">
+              <input id="stepWeight" type="number" min="0" step="0.1" placeholder="Optional">
             </label>
             <label>Notes
               <textarea id="stepNotes" placeholder="e.g. spiral pour"></textarea>
             </label>
           </div>
 
-          <button class="btn full push-top" id="btnAddStep">Add Step</button>
-        </div>
 
-        <div class="card">
-          <h3>☕ Coffee Beans I've Tried</h3>
-          <div style="margin-bottom: 12px;">
+                <button class="btn push-top" id="btnAddStep">Add Step</button>
+              </section>
+              <section class="panel">
+                <div class="section-heading"><h2>Rating and notes</h2></div>
+                <fieldset class="rating-field"><legend>Recipe rating</legend>
+              <div class="star-rating" style="margin-top:4px">
+                <input type="radio" id="star5" name="rating" value="5" aria-label="5 out of 5 stars"><label for="star5">★</label>
+                <input type="radio" id="star4" name="rating" value="4" aria-label="4 out of 5 stars"><label for="star4">★</label>
+                <input type="radio" id="star3" name="rating" value="3" aria-label="3 out of 5 stars"><label for="star3">★</label>
+                <input type="radio" id="star2" name="rating" value="2" aria-label="2 out of 5 stars"><label for="star2">★</label>
+                <input type="radio" id="star1" name="rating" value="1" aria-label="1 out of 5 stars"><label for="star1">★</label>
+              </div>
+                </fieldset>
+                <label class="push-top">Tasting notes<textarea id="recipeNotes" rows="3" placeholder="How did this recipe taste?"></textarea></label>
+              </section>
+            </div>
+            <aside class="panel editor-timeline"><div class="section-heading"><h2>Live timeline</h2><span class="muted" id="editorDuration"></span></div><div class="timeline-overview" id="editorTimelineBar" aria-hidden="true"></div><div id="stepsList" class="steps-list"></div></aside>
+          </div>
+        </section>
+
+        <section data-page="beans" class="page" hidden>
+          <div class="page-heading heading-actions"><div><h1>My Beans</h1><p>Keep track of the coffee on your shelf.</p></div><button class="btn" data-action="new-bean"><span data-icon="plus"></span> Add bean</button></div>
+          <div class="collection-toolbar">
+            <label class="toolbar-search"><span data-icon="search"></span><span class="sr-only">Search beans</span><input type="search" id="searchBeans" placeholder="Search beans"></label>
+            <label><span class="sr-only">Filter by roast</span><select id="beanRoastFilter"><option value="">All roast levels</option></select></label>
+            <label><span class="sr-only">Filter by process</span><select id="beanProcessFilter"><option value="">All processes</option></select></label>
+          </div>
+          <div id="beansGrid" class="collection-grid" aria-live="polite"><div class="loading-card" aria-label="Loading beans"></div></div>
+        </section>
+
+        <section data-page="timer" class="page" hidden>
+          <div class="page-heading"><h1>Brew Timer</h1><p>Focus on the pour. Bean Stack keeps time.</p></div>
+          <div class="timer-layout"><section class="timer-stage" aria-label="Brewing session">
+            <label class="timer-select">Recipe<select id="timerRecipe"><option value="">Choose a saved recipe</option></select></label>
+            <h2 id="timerRecipeName">Choose a recipe to begin</h2>
+            <div id="timerStep" class="timer-step">Ready to brew</div>
+            <div class="timer-clock" id="timerClock" aria-label="Time remaining">00:00</div>
+            <p id="timerInstruction">Select a recipe with brewing steps.</p>
+            <div class="timer-amounts"><span>Target <strong id="timerWeight">—</strong></span><span>Total water <strong id="timerTotal">—</strong></span></div>
+            <progress id="timerProgress" max="100" value="0" aria-label="Brewing progress"></progress>
+            <p id="timerNext" class="timer-next"></p>
+            <div class="timer-controls"><button id="timerStartPause" class="btn hero-btn" disabled>Start brew</button><button id="timerSkip" class="btn timer-outline" disabled>Skip step</button><button id="timerRestart" class="btn timer-outline" disabled>Restart</button></div>
+          </section><aside class="panel"><div class="section-heading"><h2>Brew guide</h2></div><ol class="timer-guide" id="timerGuide"></ol></aside></div>
+        </section>
+
+        <section data-page="history" class="page" hidden>
+          <div class="page-heading heading-actions"><div><h1>Brew History</h1><p>Your journal of brews, ratings, and tasting notes.</p></div><button class="btn outline" id="exportHistory"><span data-icon="download"></span> Export journal</button></div>
+          <div id="brewJournal" class="journal-list"></div>
+        </section>
+
+        <section data-page="analytics" class="page" hidden>
+          <div class="page-heading"><h1>Analytics</h1><p>See how your brewing habits and ratings change over time.</p></div>
+          <div class="metrics-grid" id="analyticsMetrics"></div>
+          <div class="analytics-grid">
+            <section class="panel"><div class="section-heading"><h2>Brewing activity</h2><span class="muted">Last 14 days</span></div><div id="activityChart"></div></section>
+            <section class="panel"><div class="section-heading"><h2>Rating trends</h2><span class="muted">Last 14 days</span></div><div id="ratingChart"></div></section>
+            <section class="panel"><div class="section-heading"><h2>Most-used beans</h2></div><div id="topBeans"></div></section>
+          </div>
+        </section>
+
+        <section data-page="assistant" class="page" hidden>
+          <div class="page-heading"><h1>AI Coffee Assistant</h1><p>Turn a bean profile into a recipe and get a second opinion on grind or water temperature.</p></div>
+          <div class="assistant-grid">
+            <section class="panel assistant-card"><span class="feature-icon" data-icon="spark"></span><h2>Generate from a bean</h2><label>Coffee bean<select id="assistantBean"><option value="">Choose a bean</option></select></label><label class="push-top">Brew method<select id="assistantMethod"></select></label><button class="btn push-top" id="assistantGenerate">Generate recipe</button></section>
+            <section class="panel assistant-card"><span class="feature-icon sage" data-icon="sliders"></span><h2>Improve a saved recipe</h2><p>Get one small grind or temperature suggestion using the recipe’s brewing parameters.</p><label>Saved recipe<select id="assistantRecipe"><option value="">Choose a recipe</option></select></label><button class="btn outline push-top" id="assistantImprove">Review recipe</button></section>
+          </div>
+          <section class="notice"><span data-icon="info"></span><div><strong>Gemini connection</strong><p id="assistantConnection"></p><p>When enabled, Bean Stack sends the selected bean’s roast, process, roast date, bag notes, and brewing parameters to Google for a recommendation.</p></div><button class="btn outline" id="btnGeminiSettings">AI settings</button></section>
+          <p id="assistantStatus" class="inline-message" role="status"></p>
+        </section>
+
+        <section data-page="settings" class="page" hidden>
+          <div class="page-heading"><h1>Settings</h1><p>Manage your assistant connection and take your brewing data with you.</p></div>
+          <div class="settings-list">
+            <section class="panel settings-row"><div class="feature-icon" data-icon="spark"></div><div><h2>Gemini integration</h2><p>Manage the API key and model used on this browser.</p></div><button class="btn outline" data-action="ai-settings">Manage Gemini</button></section>
+            <section class="panel settings-row"><div class="feature-icon sage" data-icon="download"></div><div><h2>Import and export</h2><p>Bring in recipes from a JSON file or download your recipe library.</p></div><div class="actions"><button class="btn outline" id="btnImportRecipes">Import recipes</button><button class="btn outline" id="exportRecipes">Export recipes</button></div></section>
+            <section class="panel settings-row"><div class="feature-icon" data-icon="history"></div><div><h2>Brew journal</h2><p>Your brew journal and favorites are kept in this browser.</p></div><a class="btn outline" href="#history">Open journal</a></section>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="beanEditor" class="dialog" aria-labelledby="beanEditorTitle">
+    <div class="dialog-head"><h2 id="beanEditorTitle">Add coffee bean</h2><button class="icon-btn" id="closeBeanEditor" aria-label="Close bean editor"><span data-icon="close"></span></button></div>
+          <div class="push-top">
             <label>Bean Name
               <input id="trackedBeanName" type="text" placeholder="e.g. Ethiopia Yirgacheffe">
             </label>
@@ -411,143 +308,62 @@ textarea{min-height:72px; resize:vertical}
           <div class="grid-2 push-top" style="align-items:center">
             <label style="margin:0">Rating</label>
             <div class="star-rating">
-              <input type="radio" id="bean-star5" name="bean-rating" value="5"><label for="bean-star5">★</label>
-              <input type="radio" id="bean-star4" name="bean-rating" value="4"><label for="bean-star4">★</label>
-              <input type="radio" id="bean-star3" name="bean-rating" value="3"><label for="bean-star3">★</label>
-              <input type="radio" id="bean-star2" name="bean-rating" value="2"><label for="bean-star2">★</label>
-              <input type="radio" id="bean-star1" name="bean-rating" value="1"><label for="bean-star1">★</label>
+              <input type="radio" id="bean-star5" name="bean-rating" value="5" aria-label="5 out of 5 stars"><label for="bean-star5">★</label>
+              <input type="radio" id="bean-star4" name="bean-rating" value="4" aria-label="4 out of 5 stars"><label for="bean-star4">★</label>
+              <input type="radio" id="bean-star3" name="bean-rating" value="3" aria-label="3 out of 5 stars"><label for="bean-star3">★</label>
+              <input type="radio" id="bean-star2" name="bean-rating" value="2" aria-label="2 out of 5 stars"><label for="bean-star2">★</label>
+              <input type="radio" id="bean-star1" name="bean-rating" value="1" aria-label="1 out of 5 stars"><label for="bean-star1">★</label>
             </div>
           </div>
           <button class="btn full push-top" id="btnAddBean">Add Bean</button>
           <button class="btn outline full push-top" id="btnBrewSavedBean" hidden>Generate recipes</button>
           <p id="beanGeneratorStatus" role="status"></p>
           <button class="btn outline full" id="btnCancelBean" style="display:none; margin-top:8px">Cancel</button>
-        </div>
-      </section>
 
-      <!-- RIGHT COLUMN -->
-      <section class="right-col">
-        <div class="card">
-          <div class="card-head">
-            <h3>Timeline</h3>
-          </div>
-          <div id="stepsList" class="steps-list">
-            <div style="text-align:center; color:#ccc; margin-top:30px">No steps added.</div>
-          </div>
-        </div>
-      </section>
-    </main>
+  </dialog>
 
-    <!-- Recipe Library -->
-    <div class="library-container">
-      <h2>Recipe Library</h2>
-      <input type="text" id="searchRecipes" class="search-box" placeholder="Search recipes...">
-      <div id="recipesGrid" class="library-grid">
-        <div style="color:#999">Loading recipes...</div>
-      </div>
-    </div>
+  <dialog id="searchDialog" class="dialog" aria-labelledby="searchTitle">
+    <div class="dialog-head"><h2 id="searchTitle">Search Bean Stack</h2><button class="icon-btn" id="closeSearch" aria-label="Close search"><span data-icon="close"></span></button></div>
+    <label class="toolbar-search"><span data-icon="search"></span><span class="sr-only">Search recipes and beans</span><input id="globalQuery" type="search" placeholder="Find a recipe or coffee bean" autocomplete="off"></label>
+    <div id="globalResults" class="search-results" aria-live="polite"></div>
+  </dialog>
 
-    <!-- Beans Collection -->
-    <div class="library-container">
-      <h2>My Beans Collection</h2>
-      <input type="text" id="searchBeans" class="search-box" placeholder="Search beans...">
-      <div id="beansGrid" class="library-grid">
-        <div style="color:#999">Loading beans...</div>
-      </div>
-    </div>
+  <dialog id="importModal" class="dialog wide" aria-labelledby="importTitle">
+    <div class="dialog-head"><h2 id="importTitle">Import recipes</h2><button class="icon-btn" id="btnCloseImport" aria-label="Close import"><span data-icon="close"></span></button></div>
+    <div class="drop-zone" id="importDropZone"><span data-icon="upload"></span><p>Drop a JSON file here</p><button class="btn outline" id="btnImportFromFile">Choose file</button><input type="file" id="importFileInput" accept="application/json,.json" hidden></div>
+    <label class="push-top">Or paste JSON<textarea id="importTextarea" rows="7" spellcheck="false" placeholder='[{"name":"My V60","coffee":15,"water":250,"steps":[]}]'></textarea></label>
+    <p id="importError" class="inline-message error" role="alert" hidden></p><p id="importPreview" class="inline-message" role="status" hidden></p>
+    <div class="actions"><button class="btn" id="btnDoImport">Review import</button><button class="btn outline" id="btnShowFormatGuide" aria-expanded="false">Format guide</button></div>
+    <div id="formatGuide" class="format-guide" hidden><h3>JSON format</h3><p>Use a single recipe object or an array. Only <code>name</code> is required. Step weights are cumulative grams. Start and duration are expressed separately.</p><pre>{
+  "name": "My V60 Recipe",
+  "bean": "Ethiopia Yirgacheffe",
+  "brewer": "V60",
+  "coffee": 15,
+  "water": 250,
+  "temp": 94,
+  "rating": 5,
+  "steps": [
+    {"type":"Bloom","label":"Bloom","startMin":0,"startSec":0,
+     "durMin":0,"durSec":40,"weight":45,"notes":"Wet all grounds"}
+  ]
+}</pre></div>
+  </dialog>
 
-    <footer class="footer muted" style="text-align:center; font-size:12px; margin-top:40px">
-      Made with ☕ by Mayank Jaiswal
-    </footer>
-  </div>
+  <dialog id="brewReview" class="dialog" aria-labelledby="brewReviewTitle">
+    <div class="dialog-head"><h2 id="brewReviewTitle">Brew complete</h2><button class="icon-btn" id="closeBrewReview" aria-label="Close brew review"><span data-icon="close"></span></button></div>
+    <p id="brewReviewRecipe"></p>
+    <label>How did it taste?<select id="journalRating"><option value="">No rating</option><option value="5">5 stars</option><option value="4">4 stars</option><option value="3">3 stars</option><option value="2">2 stars</option><option value="1">1 star</option></select></label>
+    <label class="push-top">Tasting notes<textarea id="journalNotes" rows="4"></textarea></label>
+    <div class="actions"><button class="btn" id="saveBrew">Save to journal</button></div>
+  </dialog>
+  <output id="toast" class="toast" role="status" hidden></output>
+  <dialog class="dialog" id="typesDialog" aria-labelledby="typesTitle">
+    <div class="dialog-head"><h2 id="typesTitle">Manage step types</h2><button class="icon-btn" id="closeTypesBtn" aria-label="Close step types"><span data-icon="close"></span></button></div>
+    <div class="type-editor" id="typesEditor"></div>
+    <div class="actions"><button class="btn" id="addTypeBtn">Add type</button></div>
+  </dialog>
 
-  <!-- Import Modal -->
-  <div class="modal-backdrop" id="importModal" style="display:none">
-    <div class="modal card" style="width:min(760px, 92vw)">
-      <h3>Import Recipes</h3>
-      <p class="muted" style="font-size:12px; margin-top:-4px">Paste JSON below (an array of recipes, or a single recipe object). See format guide underneath.</p>
-      <textarea id="importTextarea" style="min-height:220px; font-family:monospace; font-size:12px;" placeholder='[
-  {
-    "name": "My V60 Recipe",
-    "bean": "Ethiopia Yirgacheffe",
-    "brewer": "V60",
-    "coffee": 18,
-    "water": 300,
-    "temp": 94,
-    "grind": "medium-fine",
-    "rating": 5,
-    "steps": [
-      { "type": "Pour", "label": "Bloom", "color": "#fde68F", "startMin": 0, "startSec": 0, "durMin": 0, "durSec": 30, "weight": 40, "notes": "Saturate evenly" }
-    ]
-  }
-]'></textarea>
-      <div id="importError" style="color:#ef4444; font-size:12px; margin-top:6px; display:none"></div>
-      <div id="importPreview" style="font-size:12px; color:#374151; margin-top:6px; display:none"></div>
-      <div class="actions">
-        <button class="btn" id="btnDoImport">Import</button>
-        <button class="btn outline" id="btnImportFromFile">Upload JSON File</button>
-        <input type="file" id="importFileInput" accept="application/json" style="display:none">
-        <span class="flex"></span>
-        <button class="btn outline" id="btnShowFormatGuide">Format Guide</button>
-        <button class="btn outline" id="btnCloseImport">Close</button>
-      </div>
-
-      <div id="formatGuide" style="display:none; margin-top:14px; border-top:1px solid #e5e7eb; padding-top:14px;">
-        <h4 style="margin:0 0 8px 0; font-size:14px;">JSON Format</h4>
-        <p style="font-size:12px; color:#374151; line-height:1.5;">
-          Give this structure to ChatGPT along with your recipes and ask it to convert them into this JSON format. Only <code>name</code> is required — everything else is optional and will default sensibly.
-        </p>
-        <pre style="background:#f3f4f6; padding:10px; border-radius:8px; font-size:11px; overflow:auto; max-height:260px;">[
-  {
-    "name": "Recipe name (required)",
-    "bean": "Bean name",
-    "brewer": "V60 / AeroPress / Chemex / etc",
-    "coffee": 18,
-    "water": 300,
-    "temp": 94,
-    "grind": "e.g. medium-fine, 24 clicks",
-    "rating": 5,
-    "steps": [
-      {
-        "type": "Pour",
-        "label": "Bloom",
-        "color": "#fde68F",
-        "startMin": 0,
-        "startSec": 0,
-        "durMin": 0,
-        "durSec": 30,
-        "weight": 40,
-        "notes": "Saturate grounds evenly"
-      }
-    ]
-  }
-]</pre>
-        <p style="font-size:12px; color:#374151;">
-          <strong>Tip:</strong> Ask ChatGPT: <em>"Convert my coffee recipes into this exact JSON array format: [paste the structure above], one object per recipe, times split into minutes/seconds."</em>
-        </p>
-        <p style="font-size:11px; color:#6b7280;">
-          Notes: <code>type</code> should match one of your step types (Pour, Wait, Swirl, Stir, Bloom, or any custom type you've added) — unrecognized types are still imported, just won't have a matching color preset. <code>color</code> is optional (hex code); if omitted it defaults to your Pour color. <code>weight</code> is grams, omit or set null if not applicable.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Types Manager Modal -->
-  <template id="typesModalTpl">
-    <div class="modal-backdrop">
-      <div class="modal card">
-        <h3>Manage Step Types</h3>
-        <div class="type-editor" id="typesEditor"></div>
-        <div class="actions">
-          <button class="btn" id="addTypeBtn">Add type</button>
-          <span class="flex"></span>
-          <button class="btn outline" id="closeTypesBtn">Close</button>
-        </div>
-      </div>
-    </div>
-  </template>
-
-  <dialog id="geminiSettings" aria-labelledby="geminiSettingsTitle">
+  <dialog class="dialog" id="geminiSettings" aria-labelledby="geminiSettingsTitle">
     <h3 id="geminiSettingsTitle">Gemini refinement</h3>
     <p>Optional. A saved key lets Gemini suggest one grind or temperature adjustment. Bean details for a recommendation are sent to Google.</p>
     <label>Gemini API key
@@ -565,996 +381,7 @@ textarea{min-height:72px; resize:vertical}
     </div>
   </dialog>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, setDoc, doc, serverTimestamp, query, orderBy, onSnapshot, deleteDoc } 
-    from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
-    import { firebaseConfig } from './firebase-config.js';
-    import { buildBaseline, defaultTarget, mapRecipe, processes, roasts, targets, validateRecipe }
-      from './recipes/recipe-engine.js';
-    import { createGeminiClient, defaultModel, normalizeSettings, readSettings, writeSettings }
-      from './recipes/gemini.js';
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // STATE
-    let steps = [];
-    let allRecipes = [];
-    let allBeans = [];
-    let editingStepIndex = null;
-    let editingRecipeId = null;
-    let editingBeanId = null;
-    let generatedRecipe = null;
-    const pendingRecipes = [];
-    const gemini = createGeminiClient();
-    let geminiTest = null;
-
-    const field = id => document.getElementById(id);
-    const addOption = (select, value, label = value) => select.add(new Option(label, value));
-    for (const roast of roasts) addOption(field('trackedRoast'), roast, roast[0].toUpperCase() + roast.slice(1));
-    for (const process of processes) addOption(field('trackedProcess'), process);
-    const brewMethodInputs = Object.entries(targets).map(([id, target]) => {
-      addOption(field('generatedTarget'), id, target.label);
-      const input = document.createElement('input');
-      input.type = 'checkbox';
-      input.value = id;
-      input.checked = id === defaultTarget;
-      const label = document.createElement('label');
-      label.append(input, target.label);
-      field('brewMethodChoices').append(label);
-      return input;
-    });
-
-    const settingsDialog = field('geminiSettings');
-    const settingsStatus = field('geminiSettingsStatus');
-    const currentSettings = () => normalizeSettings(field('geminiKey').value, field('geminiModel').value);
-
-    field('btnGeminiSettings').addEventListener('click', () => {
-      const settings = readSettings(localStorage);
-      field('geminiKey').value = settings.key;
-      field('geminiModel').value = settings.model;
-      settingsStatus.textContent = '';
-      settingsDialog.showModal();
-    });
-    field('btnCloseGemini').addEventListener('click', () => settingsDialog.close());
-    settingsDialog.addEventListener('close', () => {
-      geminiTest?.abort();
-      field('geminiKey').value = '';
-    });
-    field('btnSaveGemini').addEventListener('click', () => {
-      try {
-        const settings = currentSettings();
-        if (!settings.key) throw new Error('Enter a Gemini API key.');
-        writeSettings(localStorage, settings);
-        settingsStatus.textContent = 'Settings saved in this browser.';
-      } catch (error) {
-        settingsStatus.textContent = error.message;
-      }
-    });
-    field('btnClearGemini').addEventListener('click', () => {
-      try {
-        writeSettings(localStorage, { key: '' });
-        geminiTest?.abort();
-        generatedRecipe?.aiRequest?.abort();
-        if (generatedRecipe) {
-          generatedRecipe.suggestion = null;
-          field('generatedAiStatus').hidden = true;
-          field('generatedAiWhy').hidden = true;
-          field('btnApplyGemini').hidden = true;
-        }
-        field('geminiKey').value = '';
-        field('geminiModel').value = defaultModel;
-        settingsStatus.textContent = 'Gemini key cleared.';
-      } catch {
-        settingsStatus.textContent = 'Could not clear settings in this browser.';
-      }
-    });
-    field('btnTestGemini').addEventListener('click', async () => {
-      const button = field('btnTestGemini');
-      const controller = new AbortController();
-      geminiTest = controller;
-      button.disabled = true;
-      try {
-        const settings = currentSettings();
-        if (!settings.key) throw new Error('Enter a Gemini API key.');
-        settingsStatus.textContent = 'Checking Gemini key and model…';
-        await gemini.testKey(settings, { signal: controller.signal });
-        if (!controller.signal.aborted) settingsStatus.textContent = 'Gemini key and model worked.';
-      } catch (error) {
-        if (!controller.signal.aborted) settingsStatus.textContent = error.message;
-      } finally {
-        geminiTest = null;
-        button.disabled = false;
-      }
-    });
-
-    function escapeText(value) {
-      const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-      return String(value ?? '').replace(/[&<>"']/g, character => entities[character]);
-    }
-
-    // STEP TYPES with colors
-    const defaultTypes = [
-      { name: 'Pour', color: '#fde68F', showWeight: true },
-      { name: 'Wait', color: '#bfdbfe', showWeight: false },
-      { name: 'Swirl', color: '#d8b4fe', showWeight: false },
-      { name: 'Stir', color: '#fda4af', showWeight: false },
-      { name: 'Bloom', color: '#fcd34d', showWeight: true },
-      { name: 'Press', color: '#a7f3d0', showWeight: false }
-    ];
-
-    function readStepTypes() {
-      try {
-        const saved = JSON.parse(localStorage.getItem('stepTypes'));
-        if (Array.isArray(saved) && saved.length && saved.every(type =>
-          typeof type?.name === 'string' && typeof type.color === 'string')) return saved;
-      } catch {
-        // Fall back to the built-in types if browser storage cannot be read.
-      }
-      return defaultTypes.map(type => ({ ...type }));
-    }
-
-    let stepTypes = readStepTypes();
-    if (!stepTypes.some(type => type.name === 'Press')) {
-      stepTypes.push({ ...defaultTypes.at(-1) });
-    }
-
-    function saveTypes() {
-      localStorage.setItem('stepTypes', JSON.stringify(stepTypes));
-      renderTypeSelect();
-    }
-
-    function editorStepTypes() {
-      if (!generatedRecipe) return stepTypes;
-      return defaultTypes.map(type => ({
-        ...type,
-        color: stepTypes.find(saved => saved.name === type.name)?.color ?? type.color,
-      }));
-    }
-
-    function renderTypeSelect() {
-      const select = field('stepType');
-      const currentValue = select.value;
-      const types = editorStepTypes();
-      select.replaceChildren();
-      for (const type of types) addOption(select, type.name);
-      if (types.some(type => type.name === currentValue)) select.value = currentValue;
-      updateColorAndWeight();
-    }
-
-    function updateColorAndWeight() {
-      const selectedType = editorStepTypes().find(type => type.name === field('stepType').value);
-      if (selectedType) {
-        document.getElementById('stepColor').value = selectedType.color;
-        // Show/hide target weight based on step type
-        const weightField = document.getElementById('stepWeight').closest('label');
-        if (selectedType.showWeight) {
-          weightField.style.display = 'block';
-          weightField.parentElement.style.gridTemplateColumns = '1fr 1fr';
-        } else {
-          weightField.style.display = 'none';
-          weightField.parentElement.style.gridTemplateColumns = '1fr';
-        }
-      }
-    }
-
-    document.getElementById('stepType').addEventListener('change', updateColorAndWeight);
-
-    // MANAGE TYPES MODAL
-    document.getElementById('btnEditTypes').addEventListener('click', () => {
-      const template = document.getElementById('typesModalTpl');
-      const clone = template.content.cloneNode(true);
-      document.body.appendChild(clone);
-      
-      renderTypesEditor();
-      
-      document.getElementById('addTypeBtn').addEventListener('click', () => {
-        stepTypes.push({ name: 'New Type', color: '#a5f3fc', showWeight: false });
-        renderTypesEditor();
-      });
-      
-      document.getElementById('closeTypesBtn').addEventListener('click', () => {
-        document.querySelector('.modal-backdrop').remove();
-        saveTypes();
-      });
-    });
-
-    function renderTypesEditor() {
-      const editor = document.getElementById('typesEditor');
-      editor.innerHTML = stepTypes.map((type, idx) => `
-        <div class="type-row">
-          <input type="text" value="${type.name}" onchange="updateTypeName(${idx}, this.value)" placeholder="Type name">
-          <input type="color" value="${type.color}" onchange="updateTypeColor(${idx}, this.value)">
-          <label style="display:flex; align-items:center; gap:4px; margin:0; font-size:11px; white-space:nowrap">
-            <input type="checkbox" ${type.showWeight ? 'checked' : ''} onchange="updateTypeWeight(${idx}, this.checked)" style="width:auto; margin:0">
-            Weight
-          </label>
-          <button class="btn delete" onclick="deleteType(${idx})">Delete</button>
-        </div>
-      `).join('');
-    }
-
-    window.updateTypeName = (idx, name) => {
-      stepTypes[idx].name = name;
-    };
-
-    window.updateTypeColor = (idx, color) => {
-      stepTypes[idx].color = color;
-    };
-
-    window.updateTypeWeight = (idx, show) => {
-      stepTypes[idx].showWeight = show;
-    };
-
-    window.deleteType = (idx) => {
-      if (stepTypes.length <= 1) {
-        alert('You must have at least one step type');
-        return;
-      }
-      if (confirm(`Delete "${stepTypes[idx].name}"?`)) {
-        stepTypes.splice(idx, 1);
-        renderTypesEditor();
-      }
-    };
-
-    // Initialize
-    renderTypeSelect();
-
-    // RATIO CALC
-    function calcRatio() {
-      const coffee = parseFloat(document.getElementById('recipeDose').value) || 0;
-      const ice = generatedRecipe ? Number(field('generatedIce').value) : 0;
-      const water = (parseFloat(document.getElementById('recipeWater').value) || 0) + ice;
-      document.getElementById('recipeRatio').value = (coffee > 0 && water > 0) ? (water / coffee).toFixed(1) : "-";
-    }
-    document.getElementById('recipeDose').addEventListener('input', calcRatio);
-    document.getElementById('recipeWater').addEventListener('input', calcRatio);
-    field('generatedIce').addEventListener('input', calcRatio);
-    field('recipeDetails').addEventListener('input', event => {
-      if (generatedRecipe && event.target.id !== 'generatedTarget') generatedRecipe.changed = true;
-    });
-    calcRatio();
-
-    function openGeneratedRecipe({ bean, target, position = 1, total = 1 }) {
-      const recipe = buildBaseline(bean, target);
-      const errors = validateRecipe(recipe, recipe.water);
-      if (errors.length) throw new Error(errors.join(' '));
-      const mapped = mapRecipe(recipe);
-
-      resetRecipeForm();
-      generatedRecipe = { bean, target };
-      renderTypeSelect();
-      field('generatedRecipePanel').hidden = false;
-      field('generatedBatch').hidden = total === 1;
-      field('generatedBatch').textContent = `Recipe ${position} of ${total}`;
-      field('generatedTarget').value = target;
-      field('generatedTarget').disabled = total > 1;
-      field('generatedIceLabel').hidden = recipe.ice === 0;
-      field('generatedIce').value = recipe.ice;
-      field('generatedCapacityLabel').hidden = target !== 'aeropress_inverted';
-      field('generatedBeanProfile').textContent = [
-        `Roast ${bean.roast}`,
-        `Process ${bean.process || 'unknown'}`,
-        bean.roastDate && `Roasted ${bean.roastDate}`,
-        bean.tastingNotes && `Bag notes ${bean.tastingNotes}`,
-      ].filter(Boolean).join(' · ');
-      field('generatedReferences').textContent = [...recipe.references, ...recipe.assumptions].join(' ');
-      field('btnCancelEdit').style.display = 'inline-block';
-
-      field('recipeName').value = mapped.name;
-      field('beanName').value = mapped.bean;
-      field('recipeBrewer').value = mapped.brewer;
-      field('recipeDose').value = mapped.coffee;
-      field('recipeWater').value = mapped.water;
-      field('recipeTemp').value = mapped.temp;
-      field('recipeGrind').value = mapped.grind;
-      steps = mapped.steps.map(step => ({
-        ...step,
-        color: editorStepTypes().find(type => type.name === step.type)?.color ?? '#fde68f',
-      }));
-      calcRatio();
-      renderSteps();
-      refineGeneratedRecipe(generatedRecipe, recipe);
-    }
-
-    async function refineGeneratedRecipe(draft, baseline) {
-      const settings = readSettings(localStorage);
-      const status = field('generatedAiStatus');
-      status.hidden = false;
-      if (!settings.key) {
-        status.textContent = 'Chart-based recipe. Gemini is off.';
-        return;
-      }
-      const controller = new AbortController();
-      draft.aiRequest = controller;
-      status.textContent = 'Checking for a Gemini adjustment. The chart-based recipe is ready.';
-      try {
-        const result = await gemini.refine(settings, draft.bean, baseline, {
-          signal: controller.signal,
-          onRetry: seconds => {
-            if (generatedRecipe !== draft || controller.signal.aborted) return;
-            status.textContent = `Gemini will retry in ${seconds} seconds. The chart-based recipe is ready.`;
-          },
-        });
-        if (generatedRecipe !== draft || controller.signal.aborted) return;
-        if (!result) {
-          status.textContent = 'Using the chart-based recipe. Gemini did not return an adjustment within the recipe limits.';
-          return;
-        }
-        const { recipe, adjustment, why } = result;
-        status.textContent = adjustment === 'none' ? 'Using the chart-based recipe.' : 'Optional Gemini suggestion';
-        const explanation = field('generatedAiWhy');
-        explanation.hidden = false;
-        explanation.textContent = adjustment === 'temperature' ? `${recipe.temp}°C. ${why}`
-          : adjustment === 'grind' ? `${recipe.clicks} clicks from zero. ${why}` : why;
-        if (adjustment !== 'none') {
-          draft.suggestion = { baseline, ...result };
-          field('btnApplyGemini').hidden = false;
-        }
-      } catch (error) {
-        if (generatedRecipe === draft && !controller.signal.aborted) {
-          status.textContent = `${error.message} The chart-based recipe is ready.`;
-        }
-      }
-    }
-
-    field('btnApplyGemini').addEventListener('click', () => {
-      const suggestion = generatedRecipe?.suggestion;
-      if (!suggestion || field('btnSaveRecipe').disabled) return;
-      const { baseline, recipe, adjustment } = suggestion;
-      const fieldId = adjustment === 'temperature' ? 'recipeTemp' : 'recipeGrind';
-      const input = field(fieldId);
-      if (input.value !== String(mapRecipe(baseline)[adjustment === 'temperature' ? 'temp' : 'grind'])) {
-        field('generatedAiStatus').textContent = 'Your edited value was kept. You can still enter the suggested value manually.';
-        return;
-      }
-      input.value = adjustment === 'temperature' ? recipe.temp : mapRecipe(recipe).grind;
-      generatedRecipe.changed = true;
-      field('btnApplyGemini').hidden = true;
-      field('generatedAiStatus').textContent = 'Gemini suggestion applied.';
-    });
-
-    function recipeEditorHasDraft() {
-      return field('btnSaveRecipe').disabled || editingRecipeId || generatedRecipe || steps.length ||
-        field('recipeName').value || field('beanName').value || field('recipeBrewer').value ||
-        field('recipeGrind').value || field('recipeDose').value !== '18' ||
-        field('recipeWater').value !== '300' || field('recipeTemp').value !== '94';
-    }
-
-    function selectedBrewMethods() {
-      const selected = brewMethodInputs.filter(input => input.checked).map(input => input.value);
-      return selected.length ? selected : [defaultTarget];
-    }
-
-    function queueRecipes(bean, methods) {
-      pendingRecipes.push(...methods.map((target, index) => ({
-        bean, target, position: index + 1, total: methods.length,
-      })));
-      showNextBeanRecipe();
-    }
-
-    function showNextBeanRecipe() {
-      if (!pendingRecipes.length) return;
-      if (recipeEditorHasDraft()) {
-        field('beanGeneratorStatus').textContent = 'Queued recipes will open after you save or cancel the current draft.';
-        field('btnCancelEdit').style.display = 'inline-block';
-        return;
-      }
-      openGeneratedRecipe(pendingRecipes[0]);
-      pendingRecipes.shift();
-      field('beanGeneratorStatus').textContent = pendingRecipes.length
-        ? 'Another bean recipe will open after you save or cancel the current draft.' : '';
-    }
-
-    field('generatedTarget').addEventListener('change', event => {
-      if (field('btnSaveRecipe').disabled ||
-          (generatedRecipe.changed && !confirm('Switch brew method and discard the current recipe edits?'))) {
-        event.target.value = generatedRecipe.target;
-        return;
-      }
-      openGeneratedRecipe({ bean: generatedRecipe.bean, target: event.target.value });
-    });
-
-    field('btnBrewSavedBean').addEventListener('click', () => {
-      const bean = allBeans.find(item => item.id === editingBeanId);
-      if (!bean?.roast) {
-        field('beanGeneratorStatus').textContent = 'Choose a roast level and save the bean before generating.';
-        field('trackedRoast').focus();
-        return;
-      }
-      queueRecipes(bean, selectedBrewMethods());
-    });
-
-    // RENDER STEPS
-    function renderSteps() {
-      const container = document.getElementById('stepsList');
-      if (steps.length === 0) {
-        container.innerHTML = '<div style="text-align:center; color:#ccc; margin-top:30px">No steps added.</div>';
-        return;
-      }
-
-      container.innerHTML = steps.map((step, idx) => {
-        const totalSecs = (step.startMin || 0) * 60 + (step.startSec || 0);
-        const durSecs = (step.durMin || 0) * 60 + (step.durSec || 0);
-        const formatTime = (s) => {
-          const m = Math.floor(s / 60);
-          const sec = s % 60;
-          return m > 0 ? `${m}:${sec.toString().padStart(2, '0')}` : `${sec}s`;
-        };
-
-        return `
-          <div class="step" tabindex="0">
-            <div class="color-bar" style="background:${escapeText(step.color)}"></div>
-            <div class="content">
-              <div class="title"><span style="color:#9ca3af">${escapeText(step.type)}</span>${step.label ? ' <span style="font-style:italic">(' + escapeText(step.label) + ')</span>' : ''}</div>
-              <div class="meta">${formatTime(totalSecs)} → ${formatTime(totalSecs + durSecs)}${step.weight ? ' • ' + escapeText(step.weight) + 'g' : ''}</div>
-              ${step.notes ? `<div class="notes">${escapeText(step.notes)}</div>` : ''}
-              <div class="row-controls">
-                <button class="btn outline" onclick="editStep(${idx})">Edit</button>
-                <button class="btn warn" onclick="deleteStep(${idx})">Delete</button>
-              </div>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // ADD/UPDATE STEP
-    document.getElementById('btnAddStep').addEventListener('click', () => {
-      const type = field('stepType').value;
-      const showsWeight = editorStepTypes().find(item => item.name === type)?.showWeight;
-      const stepData = {
-        type,
-        label: document.getElementById('stepLabel').value,
-        color: document.getElementById('stepColor').value,
-        startMin: parseInt(document.getElementById('startMin').value) || 0,
-        startSec: parseInt(document.getElementById('startSec').value) || 0,
-        durMin: parseInt(document.getElementById('durMin').value) || 0,
-        durSec: parseInt(document.getElementById('durSec').value) || 0,
-        weight: showsWeight ? Number(field('stepWeight').value) || null : null,
-        notes: document.getElementById('stepNotes').value
-      };
-
-      if (editingStepIndex !== null) {
-        steps[editingStepIndex] = stepData;
-      } else {
-        steps.push(stepData);
-      }
-
-      if (generatedRecipe) generatedRecipe.changed = true;
-      resetStepForm();
-      renderSteps();
-    });
-
-    field('btnCancelStep').addEventListener('click', resetStepForm);
-
-    function resetStepForm() {
-      editingStepIndex = null;
-      document.getElementById('btnAddStep').textContent = 'Add Step';
-      document.getElementById('stepCardTitle').textContent = 'Add Step';
-      document.getElementById('btnCancelStep').style.display = 'none';
-      document.getElementById('stepLabel').value = '';
-      document.getElementById('startMin').value = '0';
-      document.getElementById('startSec').value = '0';
-      document.getElementById('durMin').value = '0';
-      document.getElementById('durSec').value = '0';
-      document.getElementById('stepWeight').value = '';
-      document.getElementById('stepNotes').value = '';
-      updateColorAndWeight();
-    }
-
-    window.editStep = (idx) => {
-      editingStepIndex = idx;
-      const step = steps[idx];
-      document.getElementById('stepType').value = step.type;
-      document.getElementById('stepLabel').value = step.label || '';
-      document.getElementById('startMin').value = step.startMin || 0;
-      document.getElementById('startSec').value = step.startSec || 0;
-      document.getElementById('durMin').value = step.durMin || 0;
-      document.getElementById('durSec').value = step.durSec || 0;
-      document.getElementById('stepWeight').value = step.weight || '';
-      document.getElementById('stepNotes').value = step.notes || '';
-      
-      // Update weight visibility based on type
-      updateColorAndWeight();
-      document.getElementById('stepColor').value = step.color;
-      
-      document.getElementById('btnAddStep').textContent = 'Update Step';
-      document.getElementById('stepCardTitle').textContent = 'Edit Step';
-      document.getElementById('btnCancelStep').style.display = 'inline-block';
-      document.querySelector('.left-col .card:nth-child(2)').scrollIntoView({ behavior: 'smooth' });
-    };
-
-    window.deleteStep = (idx) => {
-      if (editingStepIndex === idx) resetStepForm();
-      else if (editingStepIndex !== null && idx < editingStepIndex) editingStepIndex -= 1;
-      steps.splice(idx, 1);
-      if (generatedRecipe) generatedRecipe.changed = true;
-      renderSteps();
-    };
-
-    // SAVE RECIPE
-    document.getElementById('btnSaveRecipe').addEventListener('click', async () => {
-      const btn = document.getElementById('btnSaveRecipe');
-      const originalText = btn.textContent;
-      btn.textContent = "Saving...";
-      
-      const ratingEl = document.querySelector('input[name="rating"]:checked');
-      const ratingVal = ratingEl ? Number(ratingEl.value) : 0;
-
-      const recipeData = {
-        name: document.getElementById('recipeName').value || "Untitled",
-        bean: document.getElementById('beanName').value || "",
-        brewer: document.getElementById('recipeBrewer').value || "",
-        coffee: Number(document.getElementById('recipeDose').value) || 0,
-        water: Number(document.getElementById('recipeWater').value) || 0,
-        temp: Number(document.getElementById('recipeTemp').value) || 0,
-        grind: document.getElementById('recipeGrind').value || "",
-        rating: ratingVal,
-        steps: steps,
-        timestamp: serverTimestamp()
-      };
-
-      if (generatedRecipe) {
-        const validationInput = {
-          ...recipeData,
-          target: generatedRecipe.target,
-          clicks: Number(/^\s*(\d+)\s*clicks?(?:,\s*C3S)?\s*$/i.exec(recipeData.grind)?.[1]),
-          ice: Number(field('generatedIce').value),
-        };
-        const capacity = Number(field('generatedCapacity').value);
-        const errors = validateRecipe(validationInput, capacity);
-        if (errors.length) {
-          field('generatedErrors').textContent = errors.join(' ');
-          field('generatedErrors').focus();
-          btn.textContent = originalText;
-          return;
-        }
-        field('generatedErrors').textContent = '';
-        Object.assign(recipeData, mapRecipe(validationInput), {
-          generatedTarget: generatedRecipe.target,
-          ice: validationInput.ice,
-          ...(generatedRecipe.target === 'aeropress_inverted' ? { brewerCapacity: capacity } : {}),
-        });
-      }
-
-      btn.disabled = true;
-      try {
-        if (editingRecipeId) {
-          await setDoc(doc(db, "recipes", editingRecipeId), recipeData);
-          alert("Recipe Updated! ✨");
-        } else {
-          await addDoc(collection(db, "recipes"), recipeData);
-          alert("Recipe Saved! ✨");
-        }
-        resetRecipeForm();
-        btn.textContent = originalText;
-      } catch(e) {
-        alert("Save Error: " + e.message);
-        btn.textContent = originalText;
-        return;
-      } finally {
-        btn.disabled = false;
-      }
-      showNextBeanRecipe();
-    });
-
-    document.getElementById('btnCancelEdit').addEventListener('click', () => {
-      if (field('btnSaveRecipe').disabled) return;
-      resetRecipeForm();
-      showNextBeanRecipe();
-    });
-
-    function resetRecipeForm() {
-      generatedRecipe?.aiRequest?.abort();
-      generatedRecipe = null;
-      field('generatedAiStatus').hidden = true;
-      field('generatedAiWhy').hidden = true;
-      field('btnApplyGemini').hidden = true;
-      field('generatedRecipePanel').hidden = true;
-      field('generatedBatch').hidden = true;
-      field('generatedBeanProfile').textContent = '';
-      field('generatedTarget').disabled = false;
-      field('generatedErrors').textContent = '';
-      field('generatedIce').value = '';
-      field('generatedCapacity').value = '';
-      editingRecipeId = null;
-      renderTypeSelect();
-      resetStepForm();
-      
-      document.getElementById('recipeName').value = "";
-      document.getElementById('beanName').value = "";
-      document.getElementById('recipeBrewer').value = "";
-      document.getElementById('recipeDose').value = "18";
-      document.getElementById('recipeWater').value = "300";
-      document.getElementById('recipeTemp').value = "94";
-      document.getElementById('recipeGrind').value = "";
-      
-      const ratingEl = document.querySelector('input[name="rating"]:checked');
-      if(ratingEl) ratingEl.checked = false;
-
-      steps = [];
-      renderSteps();
-      calcRatio();
-      
-      document.getElementById('btnSaveRecipe').textContent = "Save Recipe";
-      document.getElementById('btnCancelEdit').style.display = 'none';
-      window.scrollTo(0, 0);
-    }
-
-    // BEANS TRACKER
-    document.getElementById('btnAddBean').addEventListener('click', async () => {
-      const btn = document.getElementById('btnAddBean');
-      const originalText = btn.textContent;
-      
-      const beanName = document.getElementById('trackedBeanName').value.trim();
-      if (!beanName) {
-        alert('Please enter a bean name');
-        return;
-      }
-
-      const beanId = editingBeanId;
-      const roast = field('trackedRoast').value;
-      if (!beanId && !roast) {
-        field('beanGeneratorStatus').textContent = 'Choose a roast level so Bean Stack can generate a recipe.';
-        field('trackedRoast').focus();
-        return;
-      }
-
-      const methods = selectedBrewMethods();
-      btn.disabled = true;
-      field('btnCancelBean').disabled = true;
-      btn.textContent = beanId ? "Updating..." : "Saving...";
-      
-      const ratingEl = document.querySelector('input[name="bean-rating"]:checked');
-      const ratingVal = ratingEl ? Number(ratingEl.value) : 0;
-
-      const beanData = {
-        name: beanName,
-        origin: document.getElementById('trackedOrigin').value.trim() || "",
-        roaster: document.getElementById('trackedRoaster').value.trim() || "",
-        notes: document.getElementById('trackedNotes').value.trim() || "",
-        roast,
-        process: field('trackedProcess').value,
-        roastDate: field('trackedRoastDate').value,
-        tastingNotes: field('trackedTastingNotes').value.trim(),
-        rating: ratingVal,
-        timestamp: serverTimestamp()
-      };
-
-      try {
-        if (beanId) {
-          await setDoc(doc(db, "beans", beanId), beanData);
-        } else {
-          await addDoc(collection(db, "beans"), beanData);
-        }
-        resetBeanForm();
-      } catch(e) {
-        alert("Save Error: " + e.message);
-        btn.textContent = originalText;
-        return;
-      } finally {
-        btn.disabled = false;
-        field('btnCancelBean').disabled = false;
-      }
-      if (!beanId) queueRecipes(beanData, methods);
-    });
-
-    document.getElementById('btnCancelBean').addEventListener('click', resetBeanForm);
-
-    function resetBeanForm() {
-      editingBeanId = null;
-      field('btnBrewSavedBean').hidden = true;
-      field('beanGeneratorStatus').textContent = '';
-      for (const id of ['trackedRoast', 'trackedProcess', 'trackedRoastDate', 'trackedTastingNotes']) {
-        field(id).value = '';
-      }
-      for (const input of brewMethodInputs) input.checked = input.value === defaultTarget;
-      document.getElementById('trackedBeanName').value = "";
-      document.getElementById('trackedOrigin').value = "";
-      document.getElementById('trackedRoaster').value = "";
-      document.getElementById('trackedNotes').value = "";
-      
-      const ratingEl = document.querySelector('input[name="bean-rating"]:checked');
-      if(ratingEl) ratingEl.checked = false;
-      
-      document.getElementById('btnAddBean').textContent = "Add Bean";
-      document.getElementById('btnCancelBean').style.display = 'none';
-    }
-
-    window.editBean = function(id) {
-      if (field('btnAddBean').disabled) return;
-      const bean = allBeans.find(b => b.id === id);
-      if (!bean) return;
-
-      document.getElementById('trackedBeanName').value = bean.name || "";
-      document.getElementById('trackedOrigin').value = bean.origin || "";
-      document.getElementById('trackedRoaster').value = bean.roaster || "";
-      document.getElementById('trackedNotes').value = bean.notes || "";
-      field('beanGeneratorStatus').textContent = '';
-      field('btnBrewSavedBean').hidden = false;
-      field('trackedRoast').value = bean.roast || '';
-      field('trackedProcess').value = bean.process || '';
-      field('trackedRoastDate').value = bean.roastDate || '';
-      field('trackedTastingNotes').value = bean.tastingNotes || '';
-
-      const stars = document.querySelectorAll('input[name="bean-rating"]');
-      stars.forEach(s => s.checked = false);
-      if(bean.rating) {
-        const radio = document.querySelector(`input[name="bean-rating"][value="${bean.rating}"]`);
-        if(radio) radio.checked = true;
-      }
-
-      editingBeanId = id;
-      document.getElementById('btnAddBean').textContent = "Update Bean";
-      document.getElementById('btnCancelBean').style.display = 'inline-block';
-      document.querySelector('.left-col .card:nth-child(3)').scrollIntoView({ behavior: 'smooth' });
-    };
-
-    window.deleteBean = async (id) => {
-      if(confirm("Delete this bean from your collection?")) {
-        await deleteDoc(doc(db, "beans", id));
-        if(editingBeanId === id) resetBeanForm();
-      }
-    };
-
-    // LOAD RECIPES
-    const recipesQuery = query(collection(db, "recipes"), orderBy("timestamp", "desc"));
-    onSnapshot(recipesQuery, (snapshot) => {
-      allRecipes = [];
-      snapshot.forEach(d => allRecipes.push({ id: d.id, ...d.data() }));
-      renderRecipes(allRecipes);
-    });
-
-    function renderRecipes(recipes) {
-      const grid = document.getElementById('recipesGrid');
-      if (recipes.length === 0) {
-        grid.innerHTML = '<div style="color:#ccc">No recipes saved yet.</div>';
-        return;
-      }
-
-      grid.innerHTML = recipes.map(r => {
-        const ratio = r.water && r.coffee ? ((r.water + (r.ice || 0)) / r.coffee).toFixed(1) : '-';
-        const stars = "★".repeat(r.rating || 0) + "☆".repeat(5 - (r.rating || 0));
-        const stepCount = r.steps ? r.steps.length : 0;
-
-        return `
-          <div class="saved-card" onclick="loadRecipe('${r.id}')">
-            <button class="delete-card-btn" onclick="event.stopPropagation(); deleteRecipe('${r.id}')">×</button>
-            <div style="display:flex; justify-content:space-between">
-              <h4>${escapeText(r.name)}</h4>
-              <span class="card-rating">${stars}</span>
-            </div>
-            <div class="saved-meta">${escapeText(r.bean || "Unknown Bean")}</div>
-            <div class="saved-tags">
-              <span class="tag">${escapeText(r.brewer)}</span>
-              <span class="tag">1:${ratio}</span>
-              <span class="tag">${stepCount} steps</span>
-            </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    window.loadRecipe = function(id) {
-      const r = allRecipes.find(x => x.id === id);
-      if (!r || field('btnSaveRecipe').disabled) return;
-
-      resetRecipeForm();
-      if (Object.hasOwn(targets, r.generatedTarget)) {
-        generatedRecipe = { target: r.generatedTarget };
-        renderTypeSelect();
-        field('generatedRecipePanel').hidden = false;
-        field('generatedTarget').value = r.generatedTarget;
-        field('generatedTarget').disabled = true;
-        field('generatedIceLabel').hidden = !targets[r.generatedTarget].ice;
-        field('generatedIce').value = r.ice || 0;
-        field('generatedCapacityLabel').hidden = r.generatedTarget !== 'aeropress_inverted';
-        field('generatedCapacity').value = r.brewerCapacity || '';
-        field('generatedReferences').textContent = 'Saved generated recipe';
-      }
-
-      document.getElementById('beanName').value = r.bean || "";
-      document.getElementById('recipeName').value = r.name || "";
-      document.getElementById('recipeBrewer').value = r.brewer || "";
-      document.getElementById('recipeDose').value = r.coffee || 18;
-      document.getElementById('recipeWater').value = r.water || 300;
-      document.getElementById('recipeTemp').value = r.temp || 94;
-      document.getElementById('recipeGrind').value = r.grind || "";
-      calcRatio();
-
-      const stars = document.querySelectorAll('input[name="rating"]');
-      stars.forEach(s => s.checked = false);
-      if (r.rating) {
-        const radio = document.querySelector(`input[name="rating"][value="${r.rating}"]`);
-        if (radio) radio.checked = true;
-      }
-
-      steps = r.steps || [];
-      renderSteps();
-
-      editingRecipeId = id;
-      document.getElementById('btnSaveRecipe').textContent = "Update Recipe";
-      document.getElementById('btnCancelEdit').style.display = 'inline-block';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    window.deleteRecipe = async (id) => {
-      if (confirm("Delete this recipe permanently?")) {
-        await deleteDoc(doc(db, "recipes", id));
-        if (editingRecipeId === id) resetRecipeForm();
-      }
-    };
-
-    document.getElementById('searchRecipes').addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase();
-      const filtered = allRecipes.filter(r =>
-        (r.name && r.name.toLowerCase().includes(term)) ||
-        (r.bean && r.bean.toLowerCase().includes(term)) ||
-        (r.brewer && r.brewer.toLowerCase().includes(term))
-      );
-      renderRecipes(filtered);
-    });
-
-    // LOAD BEANS
-    const beansQuery = query(collection(db, "beans"), orderBy("timestamp", "desc"));
-    onSnapshot(beansQuery, (snapshot) => {
-      allBeans = [];
-      snapshot.forEach(d => allBeans.push({ id: d.id, ...d.data() }));
-      renderBeans(allBeans);
-    });
-
-    function renderBeans(beans) {
-      const grid = document.getElementById('beansGrid');
-      if (beans.length === 0) {
-        grid.innerHTML = '<div style="color:#ccc">No beans tracked yet.</div>';
-        return;
-      }
-
-      grid.innerHTML = beans.map(b => {
-        const stars = "★".repeat(b.rating || 0) + "☆".repeat(5 - (b.rating || 0));
-        const originTag = b.origin ? `<span class="tag">${escapeText(b.origin)}</span>` : '';
-        const roasterTag = b.roaster ? `<span class="tag">${escapeText(b.roaster)}</span>` : '';
-
-        return `
-          <div class="saved-card" onclick="editBean('${b.id}')">
-            <button class="delete-card-btn" onclick="event.stopPropagation(); deleteBean('${b.id}')">×</button>
-            <div style="display:flex; justify-content:space-between">
-              <h4>${escapeText(b.name)}</h4>
-              <span class="card-rating">${stars}</span>
-            </div>
-            ${b.origin || b.roaster ? '<div class="saved-meta">' + escapeText(b.origin) + (b.origin && b.roaster ? ' • ' : '') + escapeText(b.roaster) + '</div>' : ''}
-            ${b.origin || b.roaster ? '<div class="saved-tags">' + originTag + roasterTag + '</div>' : ''}
-            ${b.notes ? '<div style="font-size:12px; color:#666; margin-top:8px; font-style:italic">"' + escapeText(b.notes) + '"</div>' : ''}
-          </div>
-        `;
-      }).join('');
-    }
-
-    document.getElementById('searchBeans').addEventListener('input', (e) => {
-      const term = e.target.value.toLowerCase();
-      const filtered = allBeans.filter(b =>
-        (b.name && b.name.toLowerCase().includes(term)) ||
-        (b.origin && b.origin.toLowerCase().includes(term)) ||
-        (b.roaster && b.roaster.toLowerCase().includes(term)) ||
-        (b.notes && b.notes.toLowerCase().includes(term))
-      );
-      renderBeans(filtered);
-    });
-
-    // IMPORT RECIPES
-    const importModal = document.getElementById('importModal');
-
-    document.getElementById('btnImportRecipes').addEventListener('click', () => {
-      importModal.style.display = 'grid';
-      document.getElementById('importError').style.display = 'none';
-      document.getElementById('importPreview').style.display = 'none';
-    });
-
-    document.getElementById('btnCloseImport').addEventListener('click', () => {
-      importModal.style.display = 'none';
-    });
-
-    document.getElementById('btnShowFormatGuide').addEventListener('click', () => {
-      const guide = document.getElementById('formatGuide');
-      guide.style.display = guide.style.display === 'none' ? 'block' : 'none';
-    });
-
-    document.getElementById('btnImportFromFile').addEventListener('click', () => {
-      document.getElementById('importFileInput').click();
-    });
-
-    document.getElementById('importFileInput').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        document.getElementById('importTextarea').value = evt.target.result;
-      };
-      reader.readAsText(file);
-    });
-
-    function normalizeImportedRecipe(r) {
-      if (!r.name) throw new Error('A recipe is missing "name"');
-      return {
-        name: r.name,
-        bean: r.bean || "",
-        brewer: r.brewer || "",
-        coffee: Number(r.coffee) || 0,
-        water: Number(r.water) || 0,
-        temp: Number(r.temp) || 0,
-        grind: r.grind || "",
-        rating: Number(r.rating) || 0,
-        steps: Array.isArray(r.steps) ? r.steps.map(s => ({
-          type: s.type || "Pour",
-          label: s.label || "",
-          color: s.color || (stepTypes.find(t => t.name === (s.type || "Pour"))?.color) || "#fde68F",
-          startMin: Number(s.startMin) || 0,
-          startSec: Number(s.startSec) || 0,
-          durMin: Number(s.durMin) || 0,
-          durSec: Number(s.durSec) || 0,
-          weight: (s.weight === undefined || s.weight === null || s.weight === "") ? null : Number(s.weight),
-          notes: s.notes || ""
-        })) : [],
-        timestamp: serverTimestamp()
-      };
-    }
-
-    document.getElementById('btnDoImport').addEventListener('click', async () => {
-      const btn = document.getElementById('btnDoImport');
-      const errorBox = document.getElementById('importError');
-      const previewBox = document.getElementById('importPreview');
-      errorBox.style.display = 'none';
-      previewBox.style.display = 'none';
-
-      const raw = document.getElementById('importTextarea').value.trim();
-      if (!raw) {
-        errorBox.textContent = "Paste some JSON first.";
-        errorBox.style.display = 'block';
-        return;
-      }
-
-      let parsed;
-      try {
-        parsed = JSON.parse(raw);
-      } catch (e) {
-        errorBox.textContent = "Invalid JSON: " + e.message;
-        errorBox.style.display = 'block';
-        return;
-      }
-
-      const recipesArray = Array.isArray(parsed) ? parsed : [parsed];
-
-      let normalized;
-      try {
-        normalized = recipesArray.map(normalizeImportedRecipe);
-      } catch (e) {
-        errorBox.textContent = e.message;
-        errorBox.style.display = 'block';
-        return;
-      }
-
-      btn.textContent = "Importing...";
-      btn.disabled = true;
-
-      try {
-        for (const recipe of normalized) {
-          await addDoc(collection(db, "recipes"), recipe);
-        }
-        previewBox.textContent = `✅ Imported ${normalized.length} recipe${normalized.length !== 1 ? 's' : ''} successfully!`;
-        previewBox.style.color = '#059669';
-        previewBox.style.display = 'block';
-        document.getElementById('importTextarea').value = '';
-        setTimeout(() => { importModal.style.display = 'none'; }, 1200);
-      } catch (e) {
-        errorBox.textContent = "Import failed: " + e.message;
-        errorBox.style.display = 'block';
-      }
-
-      btn.textContent = "Import";
-      btn.disabled = false;
-    });
-  </script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  buildBaseline, lookupReferences, mapRecipe, processes, roasts, targets, validateRecipe,
+  applyBrewRatio, brewRatioOptions, buildBaseline, lookupReferences, mapRecipe, processes, roasts, targets, validateRecipe,
 } from '../public/recipes/recipe-engine.js';
 
 const bean = { name: 'Test bean', roast: 'medium', process: 'Washed' };
@@ -69,4 +69,42 @@ test('invalid edits are rejected before saving', () => {
   const inverted = buildBaseline(bean, 'aeropress_inverted');
   assert.match(validateRecipe(inverted, 200).join(' '), /capacity/);
   assert.deepEqual(validateRecipe(inverted, 210), []);
+});
+
+test('selecting a V60 ratio preserves timing and scales cumulative pour weights', () => {
+  const baseline = buildBaseline(bean);
+  const adjusted = applyBrewRatio(baseline, 16);
+  assert.equal(adjusted.water, 240);
+  assert.deepEqual(adjusted.steps.map(step => step.weight), [43.2, 144, 240, null, null]);
+  assert.deepEqual(adjusted.steps.map(({ weight, ...step }) => step), baseline.steps.map(({ weight, ...step }) => step));
+  const restored = applyBrewRatio({ ...baseline, ...adjusted }, 250 / 15);
+  assert.equal(restored.water, 250);
+  assert.equal(restored.steps.at(2).weight, 250);
+});
+
+test('iced ratio includes ice, preserves the split, and replaces the ice instruction', () => {
+  const baseline = buildBaseline(bean, 'v60_iced');
+  const edited = { ...baseline, ice: 75, water: 150, steps: mapRecipe(baseline).steps };
+  const adjusted = { ...edited, ...applyBrewRatio(edited, 16) };
+  assert.equal(adjusted.water, 160);
+  assert.equal(adjusted.ice, 80);
+  assert.equal(adjusted.steps.at(2).weight, 160);
+  assert.match(adjusted.steps[0].notes, /^Add 80 g ice to the serving vessel\. Wet/);
+  assert.deepEqual(validateRecipe(adjusted), []);
+});
+
+test('ratio presets validate across decimal doses and respect inverted capacity', () => {
+  for (const target of Object.keys(targets)) {
+    for (const coffee of [10, 10.4, 15.3, 18, 29.9, 30]) {
+      const baseline = { ...buildBaseline(bean, target), coffee };
+      for (const ratio of brewRatioOptions(target)) {
+        const adjusted = { ...baseline, ...applyBrewRatio(baseline, ratio) };
+        assert.deepEqual(validateRecipe(adjusted, adjusted.water), [], `${target}, ${coffee} g, 1:${ratio}`);
+      }
+    }
+  }
+  const inverted = buildBaseline(bean, 'aeropress_inverted');
+  assert.throws(() => applyBrewRatio(inverted, 17, 210), /exceeds your inverted brewer capacity/);
+  assert.equal(applyBrewRatio(inverted, 14, 210).water, 196);
+  assert.throws(() => applyBrewRatio({ ...inverted, steps: [] }, 14, 210), /final pour or bloom/);
 });
