@@ -1,0 +1,79 @@
+{
+  "limits": {"coffee": [10, 30], "temperature": [85, 100], "ratio": [14, 18], "hotFraction": [0.55, 0.7], "weightTolerance": 1},
+  "grindSource": "Timemore C3S grind size chart",
+  "temperatureSource": "Pour Over Brew Temps chart",
+  "processes": ["Washed", "Washed + ferment", "Yellow honey", "Red honey", "Natural", "Natural + ferment", "Honey (unspecified)", "Anaerobic", "Other"],
+  "roasts": {
+    "very light": {"v60": [96, 95, 94, 93, 92, 91], "fallback": 96, "clickOffset": -2, "aeroPressTempOffset": 4},
+    "light": {"v60": [95, 94, 93, 92, 91, 90], "fallback": 95, "clickOffset": -1, "aeroPressTempOffset": 2},
+    "medium-light": {"v60": [94, 93, 92, 91, 90, 89], "fallback": 94, "clickOffset": 0, "aeroPressTempOffset": 1},
+    "medium": {"fallback": 94, "clickOffset": 0, "aeroPressTempOffset": 0},
+    "medium-dark": {"v60": [93, 92, 91, 90, 89, 88], "fallback": 91, "clickOffset": 1, "aeroPressTempOffset": -2},
+    "dark": {"v60": [92, 91, 90, 89, 88, 87], "fallback": 90, "clickOffset": 2, "aeroPressTempOffset": -3},
+    "very dark": {"v60": [91, 90, 89, 88, 87, 86], "fallback": 88, "clickOffset": 2, "aeroPressTempOffset": -4}
+  },
+  "targets": {
+    "v60_hot": {
+      "label": "Hot V60", "brewer": "V60", "coffee": 15, "water": 250,
+      "clicks": 14, "range": [11, 18], "adjustGrind": true,
+      "timeline": [
+        ["Bloom", "Bloom", 40, 45, "Wet the grounds evenly."],
+        ["Pour", "First pour", 40, 150, "Pour in controlled circles."],
+        ["Pour", "Final pour", 30, 250, "Pour gently close to the bed."],
+        ["Swirl", "Swirl", 5, null, "Give the brewer a gentle swirl."],
+        ["Wait", "Drawdown", 60, null, "Let the water drain."]
+      ]
+    },
+    "v60_iced": {
+      "label": "Japanese iced coffee", "brewer": "V60", "coffee": 15, "water": 150, "ice": 100,
+      "clicks": 13, "range": [11, 16],
+      "timeline": [
+        ["Bloom", "Bloom", 40, 45, "Wet the grounds evenly."],
+        ["Pour", "First pour", 30, 100, "Pour gently in circles."],
+        ["Pour", "Final pour", 30, 150, "Finish the pour over the ice."],
+        ["Wait", "Drawdown", 55, null, "Swirl the carafe after draining."]
+      ]
+    },
+    "aeropress_black": {
+      "label": "Standard AeroPress", "brewer": "AeroPress", "coffee": 15, "water": 250, "temperature": 92,
+      "clicks": 14, "range": [9, 24], "adjustGrind": true,
+      "timeline": [
+        ["Pour", "Add water", 20, 250, "Use an upright brewer on a sturdy mug."],
+        ["Stir", "Stir", 10, null, "Stir gently and insert the plunger."],
+        ["Wait", "Steep", 90, null, "Keep the brewer upright."],
+        ["Press", "Press", 30, null, "Press slowly and evenly."]
+      ]
+    },
+    "aeropress_inverted": {
+      "label": "Inverted AeroPress", "brewer": "AeroPress", "coffee": 14, "water": 210, "temperature": 92,
+      "clicks": 14, "range": [9, 24],
+      "timeline": [
+        ["Pour", "Add water", 20, 210, "Use a stable setup with the plunger seated securely."],
+        ["Stir", "Stir", 10, null, "Stir gently and secure the filter cap."],
+        ["Wait", "Steep", 75, null, "Keep the brewer stable."],
+        ["Wait", "Flip", 10, null, "Hold the chamber and plunger together while flipping onto a sturdy mug."],
+        ["Press", "Press", 30, null, "Press slowly and evenly."]
+      ]
+    },
+    "aeropress_iced": {
+      "label": "AeroPress iced coffee", "brewer": "AeroPress", "coffee": 15, "water": 150, "ice": 100, "temperature": 92,
+      "clicks": 13, "range": [9, 24],
+      "timeline": [
+        ["Pour", "Add water", 20, 150, "Use an upright brewer on a sturdy cup."],
+        ["Stir", "Stir", 10, null, "Stir gently and insert the plunger."],
+        ["Wait", "Steep", 75, null, "Keep the brewer upright."],
+        ["Press", "Press over ice", 30, null, "Press slowly over the measured ice."]
+      ]
+    },
+    "aeropress_concentrate": {
+      "label": "AeroPress concentrate", "brewer": "AeroPress", "coffee": 18, "water": 100, "temperature": 92,
+      "clicks": 12, "range": [9, 24], "concentrate": true,
+      "timeline": [
+        ["Pour", "Add water", 15, 100, "Wet the grounds evenly."],
+        ["Stir", "Stir", 10, null, "Stir gently and insert the plunger."],
+        ["Wait", "Steep", 60, null, "Keep the brewer upright."],
+        ["Press", "Press", 30, null, "Press slowly and add milk to taste."]
+      ]
+    }
+  }
+}

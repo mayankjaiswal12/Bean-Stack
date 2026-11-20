@@ -1,5 +1,17 @@
 # ☕ The Daily Brew 
 
+## Bean Stack recipe generator
+
+Add a bean with a roast level to preview a hot V60 recipe on the timeline. Select several brew methods to review their recipes one at a time as you save or skip each preview. The generator also supports Japanese iced coffee, standard and inverted AeroPress, AeroPress iced coffee, and AeroPress concentrate. The C3S limits and V60 temperature lookup come from the brewing charts. AeroPress uses provisional roast-based temperatures, with 92°C for medium roast.
+
+The chart-based recipes work without Gemini. To enable optional refinements, open **AI settings** and save a personal Gemini key and model. The preview stays available while Gemini suggests a bounded grind or temperature change. Review the suggestion before applying it. Bean details used for the recommendation go to Google. The key is saved in this browser's local storage and sent to the Gemini API. See [Google's Gemini API key guidance](https://ai.google.dev/gemini-api/docs/api-key).
+
+For local development, use the Firebase template to create `public/firebase-config.js` with a development Firebase project's web settings, then run `python3 -m http.server 8000 --directory public` and open `http://localhost:8000`. Run `node --test` with Node.js 22 or newer.
+
+### Publish to Bean Stack
+
+Push your branch to the Bean Stack repository and open a pull request for a Firebase preview. Review the recipe flow there, then merge into `main` to publish to [beanstack.web.app](https://beanstack.web.app/). Both workflows run the tests before deploying and use the repository's `FIREBASE_CONFIG_JSON` and `FIREBASE_SERVICE_ACCOUNT_COFFEE_DATABASE_92533` secrets. The preview uses the database from that web configuration.
+
 **The Daily Brew** is a professional-grade coffee recipe builder and smart journal.
 
 This project is a **Universal PWA (Progressive Web App)** that runs on any device (iOS, Android, Desktop). It combines a **Step-by-Step Timeline Builder** with a **Smart Journal** that remembers your beans, lets you rate your brews, and instantly search your entire history—all synced to your personal cloud.

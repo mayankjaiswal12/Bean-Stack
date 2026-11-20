@@ -49,6 +49,20 @@ h2{font-size:18px; margin:24px 0 12px 0}
 .card-head{display:flex; align-items:center; gap:12px; justify-content:space-between; margin-bottom:12px}
 
 label{font-size:12px; color:#374151; display:block}
+[hidden]{display:none!important}
+#generatedReferences,#generatedErrors,#beanGeneratorStatus{font-size:13px;line-height:1.5}
+#generatedErrors{color:#b91c1c}
+#generatedErrors:empty,#beanGeneratorStatus:empty{display:none}
+#trackedBrewMethods{min-width:0;border:1px solid var(--stroke);border-radius:8px;padding:6px 10px}
+#trackedBrewMethods legend{color:var(--muted);font-size:12px}
+#brewMethodChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 8px}
+#brewMethodChoices label{display:flex;align-items:center;gap:6px;min-height:38px}
+#brewMethodChoices input{flex:none;margin:0}
+#generatedBatch,#generatedBeanProfile{font-size:13px;line-height:1.5}
+#geminiSettings{max-width:420px;width:calc(100% - 32px);border:1px solid #e5e7eb;border-radius:12px;padding:20px}
+#geminiSettings::backdrop{background:rgba(17,24,39,.5)}
+#geminiSettings p,#generatedAiStatus,#generatedAiWhy{font-size:13px;line-height:1.5}
+#geminiSettings input[type="password"]{box-sizing:border-box;width:100%;margin-top:6px;padding:8px 10px;border:1px solid #e5e7eb;border-radius:10px}
 input[type="text"], input[type="number"], select, textarea{
   width:100%; margin-top:6px; padding:8px 10px; border-radius:10px;
   border:1px solid #e5e7eb; background:#fff; outline:none;
@@ -135,7 +149,8 @@ textarea{min-height:72px; resize:vertical}
 .step .row-controls{
   display:none; margin-top:8px; gap:8px;
 }
-.step:hover .row-controls{display:flex}
+.step:hover .row-controls,.step:focus-within .row-controls{display:flex}
+@media (hover:none){.step .row-controls{display:flex}}
 .step .row-controls .btn{padding:6px 10px; font-size:12px}
 
 /* Modal */
@@ -226,6 +241,7 @@ textarea{min-height:72px; resize:vertical}
       </div>
       <div class="actions">
         <button class="btn outline" id="btnImportRecipes">Import</button>
+        <button class="btn outline" id="btnGeminiSettings">AI settings</button>
         <button class="btn outline" id="btnCancelEdit" style="display:none">Cancel</button>
         <button class="btn" id="btnSaveRecipe">Save Recipe</button>
       </div>
@@ -234,8 +250,26 @@ textarea{min-height:72px; resize:vertical}
     <main class="grid">
       <!-- LEFT COLUMN -->
       <section class="left-col">
-        <div class="card">
+        <div class="card" id="recipeDetails">
           <h3>Recipe Details</h3>
+          <div id="generatedRecipePanel" class="push-top" hidden>
+            <p id="generatedBatch" class="muted" hidden></p>
+            <label>Brew method
+              <select id="generatedTarget"></select>
+            </label>
+            <p id="generatedBeanProfile"></p>
+            <p id="generatedReferences"></p>
+            <p id="generatedAiStatus" role="status" hidden></p>
+            <p id="generatedAiWhy" hidden></p>
+            <button class="btn outline" id="btnApplyGemini" hidden>Apply suggestion</button>
+            <label id="generatedIceLabel" hidden>Ice (g)
+              <input id="generatedIce" type="number" min="1" step="any">
+            </label>
+            <label id="generatedCapacityLabel" hidden>Usable inverted brewer capacity (g water)
+              <input id="generatedCapacity" type="number" min="1" step="any">
+            </label>
+            <p id="generatedErrors" role="status" tabindex="-1"></p>
+          </div>
           <div class="grid-2">
             <label>Bean Name
               <input id="beanName" type="text" placeholder="e.g. Ethiopia Yirgacheffe">
@@ -313,10 +347,10 @@ textarea{min-height:72px; resize:vertical}
               </label>
             </div>
             <div class="grid-2">
-              <label>End min
+              <label>Duration min
                 <input id="durMin" class="num-wide" type="number" min="0" step="1" value="0">
               </label>
-              <label>End sec
+              <label>Duration sec
                 <input id="durSec" class="num-wide" type="number" min="0" step="1" value="0">
               </label>
             </div>
@@ -349,6 +383,26 @@ textarea{min-height:72px; resize:vertical}
               <input id="trackedRoaster" type="text" placeholder="e.g. Blue Bottle">
             </label>
           </div>
+          <div class="grid-2 push-top">
+            <label>Roast level
+              <select id="trackedRoast"><option value="">Choose roast</option></select>
+            </label>
+            <label>Process
+              <select id="trackedProcess"><option value="">Unknown</option></select>
+            </label>
+          </div>
+          <div class="grid-2 push-top">
+            <label>Roast date (optional)
+              <input id="trackedRoastDate" type="date">
+            </label>
+            <label>Tasting notes from the bag (optional)
+              <input id="trackedTastingNotes" type="text">
+            </label>
+          </div>
+          <fieldset id="trackedBrewMethods" class="push-top">
+            <legend>Brew methods</legend>
+            <div id="brewMethodChoices"></div>
+          </fieldset>
           <div class="push-top">
             <label>Notes (optional)
               <textarea id="trackedNotes" rows="2" placeholder="Your thoughts on this bean..."></textarea>
@@ -365,6 +419,8 @@ textarea{min-height:72px; resize:vertical}
             </div>
           </div>
           <button class="btn full push-top" id="btnAddBean">Add Bean</button>
+          <button class="btn outline full push-top" id="btnBrewSavedBean" hidden>Generate recipes</button>
+          <p id="beanGeneratorStatus" role="status"></p>
           <button class="btn outline full" id="btnCancelBean" style="display:none; margin-top:8px">Cancel</button>
         </div>
       </section>
@@ -374,7 +430,6 @@ textarea{min-height:72px; resize:vertical}
         <div class="card">
           <div class="card-head">
             <h3>Timeline</h3>
-            <div class="muted small">Hover to edit/delete</div>
           </div>
           <div id="stepsList" class="steps-list">
             <div style="text-align:center; color:#ccc; margin-top:30px">No steps added.</div>
@@ -492,11 +547,33 @@ textarea{min-height:72px; resize:vertical}
     </div>
   </template>
 
+  <dialog id="geminiSettings" aria-labelledby="geminiSettingsTitle">
+    <h3 id="geminiSettingsTitle">Gemini refinement</h3>
+    <p>Optional. A saved key lets Gemini suggest one grind or temperature adjustment. Bean details for a recommendation are sent to Google.</p>
+    <label>Gemini API key
+      <input id="geminiKey" type="password" autocomplete="off" spellcheck="false">
+    </label>
+    <label class="push-top">Model
+      <input id="geminiModel" type="text" spellcheck="false">
+    </label>
+    <p id="geminiSettingsStatus" role="status"></p>
+    <div class="actions">
+      <button class="btn" id="btnSaveGemini">Save</button>
+      <button class="btn outline" id="btnTestGemini">Test key</button>
+      <button class="btn outline" id="btnClearGemini">Clear key</button>
+      <button class="btn outline" id="btnCloseGemini">Close</button>
+    </div>
+  </dialog>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getFirestore, collection, addDoc, setDoc, doc, serverTimestamp, query, orderBy, onSnapshot, deleteDoc } 
     from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
     import { firebaseConfig } from './firebase-config.js';
+    import { buildBaseline, defaultTarget, mapRecipe, processes, roasts, targets, validateRecipe }
+      from './recipes/recipe-engine.js';
+    import { createGeminiClient, defaultModel, normalizeSettings, readSettings, writeSettings }
+      from './recipes/gemini.js';
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -508,6 +585,94 @@ textarea{min-height:72px; resize:vertical}
     let editingStepIndex = null;
     let editingRecipeId = null;
     let editingBeanId = null;
+    let generatedRecipe = null;
+    const pendingRecipes = [];
+    const gemini = createGeminiClient();
+    let geminiTest = null;
+
+    const field = id => document.getElementById(id);
+    const addOption = (select, value, label = value) => select.add(new Option(label, value));
+    for (const roast of roasts) addOption(field('trackedRoast'), roast, roast[0].toUpperCase() + roast.slice(1));
+    for (const process of processes) addOption(field('trackedProcess'), process);
+    const brewMethodInputs = Object.entries(targets).map(([id, target]) => {
+      addOption(field('generatedTarget'), id, target.label);
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.value = id;
+      input.checked = id === defaultTarget;
+      const label = document.createElement('label');
+      label.append(input, target.label);
+      field('brewMethodChoices').append(label);
+      return input;
+    });
+
+    const settingsDialog = field('geminiSettings');
+    const settingsStatus = field('geminiSettingsStatus');
+    const currentSettings = () => normalizeSettings(field('geminiKey').value, field('geminiModel').value);
+
+    field('btnGeminiSettings').addEventListener('click', () => {
+      const settings = readSettings(localStorage);
+      field('geminiKey').value = settings.key;
+      field('geminiModel').value = settings.model;
+      settingsStatus.textContent = '';
+      settingsDialog.showModal();
+    });
+    field('btnCloseGemini').addEventListener('click', () => settingsDialog.close());
+    settingsDialog.addEventListener('close', () => {
+      geminiTest?.abort();
+      field('geminiKey').value = '';
+    });
+    field('btnSaveGemini').addEventListener('click', () => {
+      try {
+        const settings = currentSettings();
+        if (!settings.key) throw new Error('Enter a Gemini API key.');
+        writeSettings(localStorage, settings);
+        settingsStatus.textContent = 'Settings saved in this browser.';
+      } catch (error) {
+        settingsStatus.textContent = error.message;
+      }
+    });
+    field('btnClearGemini').addEventListener('click', () => {
+      try {
+        writeSettings(localStorage, { key: '' });
+        geminiTest?.abort();
+        generatedRecipe?.aiRequest?.abort();
+        if (generatedRecipe) {
+          generatedRecipe.suggestion = null;
+          field('generatedAiStatus').hidden = true;
+          field('generatedAiWhy').hidden = true;
+          field('btnApplyGemini').hidden = true;
+        }
+        field('geminiKey').value = '';
+        field('geminiModel').value = defaultModel;
+        settingsStatus.textContent = 'Gemini key cleared.';
+      } catch {
+        settingsStatus.textContent = 'Could not clear settings in this browser.';
+      }
+    });
+    field('btnTestGemini').addEventListener('click', async () => {
+      const button = field('btnTestGemini');
+      const controller = new AbortController();
+      geminiTest = controller;
+      button.disabled = true;
+      try {
+        const settings = currentSettings();
+        if (!settings.key) throw new Error('Enter a Gemini API key.');
+        settingsStatus.textContent = 'Checking Gemini key and model…';
+        await gemini.testKey(settings, { signal: controller.signal });
+        if (!controller.signal.aborted) settingsStatus.textContent = 'Gemini key and model worked.';
+      } catch (error) {
+        if (!controller.signal.aborted) settingsStatus.textContent = error.message;
+      } finally {
+        geminiTest = null;
+        button.disabled = false;
+      }
+    });
+
+    function escapeText(value) {
+      const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      return String(value ?? '').replace(/[&<>"']/g, character => entities[character]);
+    }
 
     // STEP TYPES with colors
     const defaultTypes = [
@@ -515,30 +680,51 @@ textarea{min-height:72px; resize:vertical}
       { name: 'Wait', color: '#bfdbfe', showWeight: false },
       { name: 'Swirl', color: '#d8b4fe', showWeight: false },
       { name: 'Stir', color: '#fda4af', showWeight: false },
-      { name: 'Bloom', color: '#fcd34d', showWeight: true }
+      { name: 'Bloom', color: '#fcd34d', showWeight: true },
+      { name: 'Press', color: '#a7f3d0', showWeight: false }
     ];
 
-    let stepTypes = JSON.parse(localStorage.getItem('stepTypes')) || defaultTypes;
+    function readStepTypes() {
+      try {
+        const saved = JSON.parse(localStorage.getItem('stepTypes'));
+        if (Array.isArray(saved) && saved.length && saved.every(type =>
+          typeof type?.name === 'string' && typeof type.color === 'string')) return saved;
+      } catch {
+        // Fall back to the built-in types if browser storage cannot be read.
+      }
+      return defaultTypes.map(type => ({ ...type }));
+    }
+
+    let stepTypes = readStepTypes();
+    if (!stepTypes.some(type => type.name === 'Press')) {
+      stepTypes.push({ ...defaultTypes.at(-1) });
+    }
 
     function saveTypes() {
       localStorage.setItem('stepTypes', JSON.stringify(stepTypes));
       renderTypeSelect();
     }
 
+    function editorStepTypes() {
+      if (!generatedRecipe) return stepTypes;
+      return defaultTypes.map(type => ({
+        ...type,
+        color: stepTypes.find(saved => saved.name === type.name)?.color ?? type.color,
+      }));
+    }
+
     function renderTypeSelect() {
-      const select = document.getElementById('stepType');
+      const select = field('stepType');
       const currentValue = select.value;
-      select.innerHTML = stepTypes.map(t => 
-        `<option value="${t.name}">${t.name}</option>`
-      ).join('');
-      if (currentValue && stepTypes.find(t => t.name === currentValue)) {
-        select.value = currentValue;
-      }
+      const types = editorStepTypes();
+      select.replaceChildren();
+      for (const type of types) addOption(select, type.name);
+      if (types.some(type => type.name === currentValue)) select.value = currentValue;
       updateColorAndWeight();
     }
 
     function updateColorAndWeight() {
-      const selectedType = stepTypes.find(t => t.name === document.getElementById('stepType').value);
+      const selectedType = editorStepTypes().find(type => type.name === field('stepType').value);
       if (selectedType) {
         document.getElementById('stepColor').value = selectedType.color;
         // Show/hide target weight based on step type
@@ -618,12 +804,167 @@ textarea{min-height:72px; resize:vertical}
     // RATIO CALC
     function calcRatio() {
       const coffee = parseFloat(document.getElementById('recipeDose').value) || 0;
-      const water = parseFloat(document.getElementById('recipeWater').value) || 0;
+      const ice = generatedRecipe ? Number(field('generatedIce').value) : 0;
+      const water = (parseFloat(document.getElementById('recipeWater').value) || 0) + ice;
       document.getElementById('recipeRatio').value = (coffee > 0 && water > 0) ? (water / coffee).toFixed(1) : "-";
     }
     document.getElementById('recipeDose').addEventListener('input', calcRatio);
     document.getElementById('recipeWater').addEventListener('input', calcRatio);
+    field('generatedIce').addEventListener('input', calcRatio);
+    field('recipeDetails').addEventListener('input', event => {
+      if (generatedRecipe && event.target.id !== 'generatedTarget') generatedRecipe.changed = true;
+    });
     calcRatio();
+
+    function openGeneratedRecipe({ bean, target, position = 1, total = 1 }) {
+      const recipe = buildBaseline(bean, target);
+      const errors = validateRecipe(recipe, recipe.water);
+      if (errors.length) throw new Error(errors.join(' '));
+      const mapped = mapRecipe(recipe);
+
+      resetRecipeForm();
+      generatedRecipe = { bean, target };
+      renderTypeSelect();
+      field('generatedRecipePanel').hidden = false;
+      field('generatedBatch').hidden = total === 1;
+      field('generatedBatch').textContent = `Recipe ${position} of ${total}`;
+      field('generatedTarget').value = target;
+      field('generatedTarget').disabled = total > 1;
+      field('generatedIceLabel').hidden = recipe.ice === 0;
+      field('generatedIce').value = recipe.ice;
+      field('generatedCapacityLabel').hidden = target !== 'aeropress_inverted';
+      field('generatedBeanProfile').textContent = [
+        `Roast ${bean.roast}`,
+        `Process ${bean.process || 'unknown'}`,
+        bean.roastDate && `Roasted ${bean.roastDate}`,
+        bean.tastingNotes && `Bag notes ${bean.tastingNotes}`,
+      ].filter(Boolean).join(' · ');
+      field('generatedReferences').textContent = [...recipe.references, ...recipe.assumptions].join(' ');
+      field('btnCancelEdit').style.display = 'inline-block';
+
+      field('recipeName').value = mapped.name;
+      field('beanName').value = mapped.bean;
+      field('recipeBrewer').value = mapped.brewer;
+      field('recipeDose').value = mapped.coffee;
+      field('recipeWater').value = mapped.water;
+      field('recipeTemp').value = mapped.temp;
+      field('recipeGrind').value = mapped.grind;
+      steps = mapped.steps.map(step => ({
+        ...step,
+        color: editorStepTypes().find(type => type.name === step.type)?.color ?? '#fde68f',
+      }));
+      calcRatio();
+      renderSteps();
+      refineGeneratedRecipe(generatedRecipe, recipe);
+    }
+
+    async function refineGeneratedRecipe(draft, baseline) {
+      const settings = readSettings(localStorage);
+      const status = field('generatedAiStatus');
+      status.hidden = false;
+      if (!settings.key) {
+        status.textContent = 'Chart-based recipe. Gemini is off.';
+        return;
+      }
+      const controller = new AbortController();
+      draft.aiRequest = controller;
+      status.textContent = 'Checking for a Gemini adjustment. The chart-based recipe is ready.';
+      try {
+        const result = await gemini.refine(settings, draft.bean, baseline, {
+          signal: controller.signal,
+          onRetry: seconds => {
+            if (generatedRecipe !== draft || controller.signal.aborted) return;
+            status.textContent = `Gemini will retry in ${seconds} seconds. The chart-based recipe is ready.`;
+          },
+        });
+        if (generatedRecipe !== draft || controller.signal.aborted) return;
+        if (!result) {
+          status.textContent = 'Using the chart-based recipe. Gemini did not return an adjustment within the recipe limits.';
+          return;
+        }
+        const { recipe, adjustment, why } = result;
+        status.textContent = adjustment === 'none' ? 'Using the chart-based recipe.' : 'Optional Gemini suggestion';
+        const explanation = field('generatedAiWhy');
+        explanation.hidden = false;
+        explanation.textContent = adjustment === 'temperature' ? `${recipe.temp}°C. ${why}`
+          : adjustment === 'grind' ? `${recipe.clicks} clicks from zero. ${why}` : why;
+        if (adjustment !== 'none') {
+          draft.suggestion = { baseline, ...result };
+          field('btnApplyGemini').hidden = false;
+        }
+      } catch (error) {
+        if (generatedRecipe === draft && !controller.signal.aborted) {
+          status.textContent = `${error.message} The chart-based recipe is ready.`;
+        }
+      }
+    }
+
+    field('btnApplyGemini').addEventListener('click', () => {
+      const suggestion = generatedRecipe?.suggestion;
+      if (!suggestion || field('btnSaveRecipe').disabled) return;
+      const { baseline, recipe, adjustment } = suggestion;
+      const fieldId = adjustment === 'temperature' ? 'recipeTemp' : 'recipeGrind';
+      const input = field(fieldId);
+      if (input.value !== String(mapRecipe(baseline)[adjustment === 'temperature' ? 'temp' : 'grind'])) {
+        field('generatedAiStatus').textContent = 'Your edited value was kept. You can still enter the suggested value manually.';
+        return;
+      }
+      input.value = adjustment === 'temperature' ? recipe.temp : mapRecipe(recipe).grind;
+      generatedRecipe.changed = true;
+      field('btnApplyGemini').hidden = true;
+      field('generatedAiStatus').textContent = 'Gemini suggestion applied.';
+    });
+
+    function recipeEditorHasDraft() {
+      return field('btnSaveRecipe').disabled || editingRecipeId || generatedRecipe || steps.length ||
+        field('recipeName').value || field('beanName').value || field('recipeBrewer').value ||
+        field('recipeGrind').value || field('recipeDose').value !== '18' ||
+        field('recipeWater').value !== '300' || field('recipeTemp').value !== '94';
+    }
+
+    function selectedBrewMethods() {
+      const selected = brewMethodInputs.filter(input => input.checked).map(input => input.value);
+      return selected.length ? selected : [defaultTarget];
+    }
+
+    function queueRecipes(bean, methods) {
+      pendingRecipes.push(...methods.map((target, index) => ({
+        bean, target, position: index + 1, total: methods.length,
+      })));
+      showNextBeanRecipe();
+    }
+
+    function showNextBeanRecipe() {
+      if (!pendingRecipes.length) return;
+      if (recipeEditorHasDraft()) {
+        field('beanGeneratorStatus').textContent = 'Queued recipes will open after you save or cancel the current draft.';
+        field('btnCancelEdit').style.display = 'inline-block';
+        return;
+      }
+      openGeneratedRecipe(pendingRecipes[0]);
+      pendingRecipes.shift();
+      field('beanGeneratorStatus').textContent = pendingRecipes.length
+        ? 'Another bean recipe will open after you save or cancel the current draft.' : '';
+    }
+
+    field('generatedTarget').addEventListener('change', event => {
+      if (field('btnSaveRecipe').disabled ||
+          (generatedRecipe.changed && !confirm('Switch brew method and discard the current recipe edits?'))) {
+        event.target.value = generatedRecipe.target;
+        return;
+      }
+      openGeneratedRecipe({ bean: generatedRecipe.bean, target: event.target.value });
+    });
+
+    field('btnBrewSavedBean').addEventListener('click', () => {
+      const bean = allBeans.find(item => item.id === editingBeanId);
+      if (!bean?.roast) {
+        field('beanGeneratorStatus').textContent = 'Choose a roast level and save the bean before generating.';
+        field('trackedRoast').focus();
+        return;
+      }
+      queueRecipes(bean, selectedBrewMethods());
+    });
 
     // RENDER STEPS
     function renderSteps() {
@@ -643,12 +984,12 @@ textarea{min-height:72px; resize:vertical}
         };
 
         return `
-          <div class="step">
-            <div class="color-bar" style="background:${step.color}"></div>
+          <div class="step" tabindex="0">
+            <div class="color-bar" style="background:${escapeText(step.color)}"></div>
             <div class="content">
-              <div class="title"><span style="color:#9ca3af">${step.type}</span>${step.label ? ' <span style="font-style:italic">(' + step.label + ')</span>' : ''}</div>
-              <div class="meta">${formatTime(totalSecs)} → ${formatTime(totalSecs + durSecs)}${step.weight ? ' • ' + step.weight + 'g' : ''}</div>
-              ${step.notes ? `<div class="notes">${step.notes}</div>` : ''}
+              <div class="title"><span style="color:#9ca3af">${escapeText(step.type)}</span>${step.label ? ' <span style="font-style:italic">(' + escapeText(step.label) + ')</span>' : ''}</div>
+              <div class="meta">${formatTime(totalSecs)} → ${formatTime(totalSecs + durSecs)}${step.weight ? ' • ' + escapeText(step.weight) + 'g' : ''}</div>
+              ${step.notes ? `<div class="notes">${escapeText(step.notes)}</div>` : ''}
               <div class="row-controls">
                 <button class="btn outline" onclick="editStep(${idx})">Edit</button>
                 <button class="btn warn" onclick="deleteStep(${idx})">Delete</button>
@@ -661,43 +1002,34 @@ textarea{min-height:72px; resize:vertical}
 
     // ADD/UPDATE STEP
     document.getElementById('btnAddStep').addEventListener('click', () => {
+      const type = field('stepType').value;
+      const showsWeight = editorStepTypes().find(item => item.name === type)?.showWeight;
       const stepData = {
-        type: document.getElementById('stepType').value,
+        type,
         label: document.getElementById('stepLabel').value,
         color: document.getElementById('stepColor').value,
         startMin: parseInt(document.getElementById('startMin').value) || 0,
         startSec: parseInt(document.getElementById('startSec').value) || 0,
         durMin: parseInt(document.getElementById('durMin').value) || 0,
         durSec: parseInt(document.getElementById('durSec').value) || 0,
-        weight: parseInt(document.getElementById('stepWeight').value) || null,
+        weight: showsWeight ? Number(field('stepWeight').value) || null : null,
         notes: document.getElementById('stepNotes').value
       };
 
       if (editingStepIndex !== null) {
         steps[editingStepIndex] = stepData;
-        editingStepIndex = null;
-        document.getElementById('btnAddStep').textContent = 'Add Step';
-        document.getElementById('stepCardTitle').textContent = 'Add Step';
-        document.getElementById('btnCancelStep').style.display = 'none';
       } else {
         steps.push(stepData);
       }
 
-      // Reset form
-      document.getElementById('stepLabel').value = '';
-      document.getElementById('startMin').value = '0';
-      document.getElementById('startSec').value = '0';
-      document.getElementById('durMin').value = '0';
-      document.getElementById('durSec').value = '0';
-      document.getElementById('stepWeight').value = '';
-      document.getElementById('stepNotes').value = '';
-      document.getElementById('stepColor').value = '#fde68F';
-      updateColorAndWeight();
-      
+      if (generatedRecipe) generatedRecipe.changed = true;
+      resetStepForm();
       renderSteps();
     });
 
-    document.getElementById('btnCancelStep').addEventListener('click', () => {
+    field('btnCancelStep').addEventListener('click', resetStepForm);
+
+    function resetStepForm() {
       editingStepIndex = null;
       document.getElementById('btnAddStep').textContent = 'Add Step';
       document.getElementById('stepCardTitle').textContent = 'Add Step';
@@ -710,14 +1042,13 @@ textarea{min-height:72px; resize:vertical}
       document.getElementById('stepWeight').value = '';
       document.getElementById('stepNotes').value = '';
       updateColorAndWeight();
-    });
+    }
 
     window.editStep = (idx) => {
       editingStepIndex = idx;
       const step = steps[idx];
       document.getElementById('stepType').value = step.type;
       document.getElementById('stepLabel').value = step.label || '';
-      document.getElementById('stepColor').value = step.color;
       document.getElementById('startMin').value = step.startMin || 0;
       document.getElementById('startSec').value = step.startSec || 0;
       document.getElementById('durMin').value = step.durMin || 0;
@@ -727,6 +1058,7 @@ textarea{min-height:72px; resize:vertical}
       
       // Update weight visibility based on type
       updateColorAndWeight();
+      document.getElementById('stepColor').value = step.color;
       
       document.getElementById('btnAddStep').textContent = 'Update Step';
       document.getElementById('stepCardTitle').textContent = 'Edit Step';
@@ -735,12 +1067,10 @@ textarea{min-height:72px; resize:vertical}
     };
 
     window.deleteStep = (idx) => {
-      if (editingStepIndex === idx) {
-        editingStepIndex = null;
-        document.getElementById('btnAddStep').textContent = 'Add Step';
-        document.getElementById('btnCancelStep').style.display = 'none';
-      }
+      if (editingStepIndex === idx) resetStepForm();
+      else if (editingStepIndex !== null && idx < editingStepIndex) editingStepIndex -= 1;
       steps.splice(idx, 1);
+      if (generatedRecipe) generatedRecipe.changed = true;
       renderSteps();
     };
 
@@ -766,6 +1096,30 @@ textarea{min-height:72px; resize:vertical}
         timestamp: serverTimestamp()
       };
 
+      if (generatedRecipe) {
+        const validationInput = {
+          ...recipeData,
+          target: generatedRecipe.target,
+          clicks: Number(/^\s*(\d+)\s*clicks?(?:,\s*C3S)?\s*$/i.exec(recipeData.grind)?.[1]),
+          ice: Number(field('generatedIce').value),
+        };
+        const capacity = Number(field('generatedCapacity').value);
+        const errors = validateRecipe(validationInput, capacity);
+        if (errors.length) {
+          field('generatedErrors').textContent = errors.join(' ');
+          field('generatedErrors').focus();
+          btn.textContent = originalText;
+          return;
+        }
+        field('generatedErrors').textContent = '';
+        Object.assign(recipeData, mapRecipe(validationInput), {
+          generatedTarget: generatedRecipe.target,
+          ice: validationInput.ice,
+          ...(generatedRecipe.target === 'aeropress_inverted' ? { brewerCapacity: capacity } : {}),
+        });
+      }
+
+      btn.disabled = true;
       try {
         if (editingRecipeId) {
           await setDoc(doc(db, "recipes", editingRecipeId), recipeData);
@@ -779,14 +1133,35 @@ textarea{min-height:72px; resize:vertical}
       } catch(e) {
         alert("Save Error: " + e.message);
         btn.textContent = originalText;
+        return;
+      } finally {
+        btn.disabled = false;
       }
+      showNextBeanRecipe();
     });
 
-    document.getElementById('btnCancelEdit').addEventListener('click', resetRecipeForm);
+    document.getElementById('btnCancelEdit').addEventListener('click', () => {
+      if (field('btnSaveRecipe').disabled) return;
+      resetRecipeForm();
+      showNextBeanRecipe();
+    });
 
     function resetRecipeForm() {
+      generatedRecipe?.aiRequest?.abort();
+      generatedRecipe = null;
+      field('generatedAiStatus').hidden = true;
+      field('generatedAiWhy').hidden = true;
+      field('btnApplyGemini').hidden = true;
+      field('generatedRecipePanel').hidden = true;
+      field('generatedBatch').hidden = true;
+      field('generatedBeanProfile').textContent = '';
+      field('generatedTarget').disabled = false;
+      field('generatedErrors').textContent = '';
+      field('generatedIce').value = '';
+      field('generatedCapacity').value = '';
       editingRecipeId = null;
-      editingStepIndex = null;
+      renderTypeSelect();
+      resetStepForm();
       
       document.getElementById('recipeName').value = "";
       document.getElementById('beanName').value = "";
@@ -805,8 +1180,6 @@ textarea{min-height:72px; resize:vertical}
       
       document.getElementById('btnSaveRecipe').textContent = "Save Recipe";
       document.getElementById('btnCancelEdit').style.display = 'none';
-      document.getElementById('btnAddStep').textContent = 'Add Step';
-      document.getElementById('btnCancelStep').style.display = 'none';
       window.scrollTo(0, 0);
     }
 
@@ -821,7 +1194,18 @@ textarea{min-height:72px; resize:vertical}
         return;
       }
 
-      btn.textContent = editingBeanId ? "Updating..." : "Saving...";
+      const beanId = editingBeanId;
+      const roast = field('trackedRoast').value;
+      if (!beanId && !roast) {
+        field('beanGeneratorStatus').textContent = 'Choose a roast level so Bean Stack can generate a recipe.';
+        field('trackedRoast').focus();
+        return;
+      }
+
+      const methods = selectedBrewMethods();
+      btn.disabled = true;
+      field('btnCancelBean').disabled = true;
+      btn.textContent = beanId ? "Updating..." : "Saving...";
       
       const ratingEl = document.querySelector('input[name="bean-rating"]:checked');
       const ratingVal = ratingEl ? Number(ratingEl.value) : 0;
@@ -831,28 +1215,42 @@ textarea{min-height:72px; resize:vertical}
         origin: document.getElementById('trackedOrigin').value.trim() || "",
         roaster: document.getElementById('trackedRoaster').value.trim() || "",
         notes: document.getElementById('trackedNotes').value.trim() || "",
+        roast,
+        process: field('trackedProcess').value,
+        roastDate: field('trackedRoastDate').value,
+        tastingNotes: field('trackedTastingNotes').value.trim(),
         rating: ratingVal,
         timestamp: serverTimestamp()
       };
 
       try {
-        if (editingBeanId) {
-          await setDoc(doc(db, "beans", editingBeanId), beanData);
+        if (beanId) {
+          await setDoc(doc(db, "beans", beanId), beanData);
         } else {
           await addDoc(collection(db, "beans"), beanData);
         }
         resetBeanForm();
-        btn.textContent = originalText;
       } catch(e) {
         alert("Save Error: " + e.message);
         btn.textContent = originalText;
+        return;
+      } finally {
+        btn.disabled = false;
+        field('btnCancelBean').disabled = false;
       }
+      if (!beanId) queueRecipes(beanData, methods);
     });
 
     document.getElementById('btnCancelBean').addEventListener('click', resetBeanForm);
 
     function resetBeanForm() {
       editingBeanId = null;
+      field('btnBrewSavedBean').hidden = true;
+      field('beanGeneratorStatus').textContent = '';
+      for (const id of ['trackedRoast', 'trackedProcess', 'trackedRoastDate', 'trackedTastingNotes']) {
+        field(id).value = '';
+      }
+      for (const input of brewMethodInputs) input.checked = input.value === defaultTarget;
       document.getElementById('trackedBeanName').value = "";
       document.getElementById('trackedOrigin').value = "";
       document.getElementById('trackedRoaster').value = "";
@@ -866,6 +1264,7 @@ textarea{min-height:72px; resize:vertical}
     }
 
     window.editBean = function(id) {
+      if (field('btnAddBean').disabled) return;
       const bean = allBeans.find(b => b.id === id);
       if (!bean) return;
 
@@ -873,6 +1272,12 @@ textarea{min-height:72px; resize:vertical}
       document.getElementById('trackedOrigin').value = bean.origin || "";
       document.getElementById('trackedRoaster').value = bean.roaster || "";
       document.getElementById('trackedNotes').value = bean.notes || "";
+      field('beanGeneratorStatus').textContent = '';
+      field('btnBrewSavedBean').hidden = false;
+      field('trackedRoast').value = bean.roast || '';
+      field('trackedProcess').value = bean.process || '';
+      field('trackedRoastDate').value = bean.roastDate || '';
+      field('trackedTastingNotes').value = bean.tastingNotes || '';
 
       const stars = document.querySelectorAll('input[name="bean-rating"]');
       stars.forEach(s => s.checked = false);
@@ -910,7 +1315,7 @@ textarea{min-height:72px; resize:vertical}
       }
 
       grid.innerHTML = recipes.map(r => {
-        const ratio = r.water && r.coffee ? (r.water / r.coffee).toFixed(1) : '-';
+        const ratio = r.water && r.coffee ? ((r.water + (r.ice || 0)) / r.coffee).toFixed(1) : '-';
         const stars = "★".repeat(r.rating || 0) + "☆".repeat(5 - (r.rating || 0));
         const stepCount = r.steps ? r.steps.length : 0;
 
@@ -918,12 +1323,12 @@ textarea{min-height:72px; resize:vertical}
           <div class="saved-card" onclick="loadRecipe('${r.id}')">
             <button class="delete-card-btn" onclick="event.stopPropagation(); deleteRecipe('${r.id}')">×</button>
             <div style="display:flex; justify-content:space-between">
-              <h4>${r.name}</h4>
+              <h4>${escapeText(r.name)}</h4>
               <span class="card-rating">${stars}</span>
             </div>
-            <div class="saved-meta">${r.bean || "Unknown Bean"}</div>
+            <div class="saved-meta">${escapeText(r.bean || "Unknown Bean")}</div>
             <div class="saved-tags">
-              <span class="tag">${r.brewer}</span>
+              <span class="tag">${escapeText(r.brewer)}</span>
               <span class="tag">1:${ratio}</span>
               <span class="tag">${stepCount} steps</span>
             </div>
@@ -934,7 +1339,21 @@ textarea{min-height:72px; resize:vertical}
 
     window.loadRecipe = function(id) {
       const r = allRecipes.find(x => x.id === id);
-      if (!r) return;
+      if (!r || field('btnSaveRecipe').disabled) return;
+
+      resetRecipeForm();
+      if (Object.hasOwn(targets, r.generatedTarget)) {
+        generatedRecipe = { target: r.generatedTarget };
+        renderTypeSelect();
+        field('generatedRecipePanel').hidden = false;
+        field('generatedTarget').value = r.generatedTarget;
+        field('generatedTarget').disabled = true;
+        field('generatedIceLabel').hidden = !targets[r.generatedTarget].ice;
+        field('generatedIce').value = r.ice || 0;
+        field('generatedCapacityLabel').hidden = r.generatedTarget !== 'aeropress_inverted';
+        field('generatedCapacity').value = r.brewerCapacity || '';
+        field('generatedReferences').textContent = 'Saved generated recipe';
+      }
 
       document.getElementById('beanName').value = r.bean || "";
       document.getElementById('recipeName').value = r.name || "";
@@ -995,19 +1414,19 @@ textarea{min-height:72px; resize:vertical}
 
       grid.innerHTML = beans.map(b => {
         const stars = "★".repeat(b.rating || 0) + "☆".repeat(5 - (b.rating || 0));
-        const originTag = b.origin ? `<span class="tag">${b.origin}</span>` : '';
-        const roasterTag = b.roaster ? `<span class="tag">${b.roaster}</span>` : '';
+        const originTag = b.origin ? `<span class="tag">${escapeText(b.origin)}</span>` : '';
+        const roasterTag = b.roaster ? `<span class="tag">${escapeText(b.roaster)}</span>` : '';
 
         return `
           <div class="saved-card" onclick="editBean('${b.id}')">
             <button class="delete-card-btn" onclick="event.stopPropagation(); deleteBean('${b.id}')">×</button>
             <div style="display:flex; justify-content:space-between">
-              <h4>${b.name}</h4>
+              <h4>${escapeText(b.name)}</h4>
               <span class="card-rating">${stars}</span>
             </div>
-            ${b.origin || b.roaster ? '<div class="saved-meta">' + (b.origin || '') + (b.origin && b.roaster ? ' • ' : '') + (b.roaster || '') + '</div>' : ''}
+            ${b.origin || b.roaster ? '<div class="saved-meta">' + escapeText(b.origin) + (b.origin && b.roaster ? ' • ' : '') + escapeText(b.roaster) + '</div>' : ''}
             ${b.origin || b.roaster ? '<div class="saved-tags">' + originTag + roasterTag + '</div>' : ''}
-            ${b.notes ? '<div style="font-size:12px; color:#666; margin-top:8px; font-style:italic">"' + b.notes + '"</div>' : ''}
+            ${b.notes ? '<div style="font-size:12px; color:#666; margin-top:8px; font-style:italic">"' + escapeText(b.notes) + '"</div>' : ''}
           </div>
         `;
       }).join('');
