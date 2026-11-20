@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  applyBrewRatio, brewRatioOptions, buildBaseline, lookupReferences, mapRecipe, processes, roasts, targets, validateRecipe,
+  applyBrewRatio, brewRatioOptions, brewWaterRange, buildBaseline, lookupReferences, mapRecipe, processes, roasts, targets,
+  validateRecipe,
 } from '../public/recipes/recipe-engine.js';
 
 const bean = { name: 'Test bean', roast: 'medium', process: 'Washed' };
@@ -18,6 +19,33 @@ test('all target, roast and process combinations produce valid baselines', () =>
     }
   }
   assert.equal(combinations, 420);
+});
+
+test('a requested water amount scales the dose, ice and timeline at the method ratio', () => {
+  const hot = buildBaseline(bean, 'v60_hot', 300);
+  assert.equal(hot.coffee, 18);
+  assert.equal(hot.water, 300);
+  assert.deepEqual(hot.steps.map(step => step.weight), [54, 180, 300, null, null]);
+
+  const iced = buildBaseline(bean, 'v60_iced', 180);
+  assert.equal(iced.coffee, 18);
+  assert.equal(iced.water, 180);
+  assert.equal(iced.ice, 120);
+  assert.equal(iced.steps[2].weight, 180);
+  assert.match(mapRecipe(iced).steps[0].notes, /^Add 120 g ice/);
+});
+
+test('the assistant water limits produce valid recipes for every brew method', () => {
+  for (const target of Object.keys(targets)) {
+    const [min, max] = brewWaterRange(target);
+    for (const water of [min, max, Number(((min + max) / 2).toFixed(1))]) {
+      const recipe = buildBaseline(bean, target, water);
+      assert.equal(recipe.water, water);
+      assert.deepEqual(validateRecipe(recipe, water), []);
+    }
+    assert.throws(() => buildBaseline(bean, target, min - 1), /Enter between/);
+    assert.throws(() => buildBaseline(bean, target, max + 1), /Enter between/);
+  }
 });
 
 test('medium V60 uses the chart midpoint and unknown processes show a fallback', () => {

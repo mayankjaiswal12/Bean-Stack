@@ -248,6 +248,8 @@ textarea { resize: vertical; }
 .assistant-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
 .assistant-card { display: grid; gap: 9px; justify-items: start; align-content: start; }
 .assistant-card label { width: 100%; }
+.assistant-bean-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; width: 100%; }
+.assistant-brew-fields { width: 100%; }
 .sage.feature-icon { background: #e9eee1; color: #4a6143; }
 .notice, .settings-row { display: flex; gap: 13px; align-items: center; flex-wrap: wrap; }
 .notice { margin-top: 16px; padding: 15px; background: #f0ebe0; border: 1px solid var(--border); border-radius: 9px; }

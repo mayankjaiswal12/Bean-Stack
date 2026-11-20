@@ -1,4 +1,4 @@
-import { defaultTarget, targets } from './recipes/recipe-engine.js';
+import { brewWaterRange, defaultTarget, targets } from './recipes/recipe-engine.js';
 import { brewDate, brewDuration, brewPosition, formatClock, summarizeJournal, timelineFor } from './recipes/brewing.js';
 import { readSettings } from './recipes/gemini.js';
 
@@ -81,6 +81,7 @@ export function createWorkspace(actions) {
   const field = id => document.getElementById(id);
   let recipes = [];
   let beans = [];
+  let pendingAssistantBeanId = null;
   let readyRecipes = false;
   let readyBeans = false;
   let recipeError = false;
@@ -104,6 +105,18 @@ export function createWorkspace(actions) {
     field('recipeMethod').add(new Option(target.label, id));
   }
   field('assistantMethod').value = defaultTarget;
+  resetAssistantWater();
+
+  function resetAssistantWater() {
+    const targetId = field('assistantMethod').value;
+    const target = targets[targetId];
+    const water = field('assistantWater');
+    const [minimum, maximum] = brewWaterRange(targetId);
+    water.min = minimum;
+    water.max = maximum;
+    water.value = target.water;
+    field('assistantWaterLabel').textContent = target.ice ? 'Hot water (g)' : 'Water (g)';
+  }
 
   function toast(message) {
     const element = field('toast');
@@ -168,7 +181,14 @@ export function createWorkspace(actions) {
       const id = escapeText(recipe.id);
       return `<article class="collection-card"><div class="card-cover ${methodColor(method)}">${itemIcon(methodIcon(method))}<span class="tag">${escapeText(method)}</span><button type="button" class="icon-btn favorite-icon" data-action="favorite" data-id="${id}" aria-label="Favorite ${escapeText(recipe.name)}" aria-pressed="${favorite}">${icon('star')}</button></div>
         <div class="collection-body"><div><h2>${escapeText(recipe.name)}</h2><p>${escapeText(recipe.bean || 'Coffee bean unspecified')}</p>${stars(recipe.rating)}</div>
-        ${parameters([['Dose', quantity(recipe.coffee, ' g')], ['Water', quantity(recipe.water, ' g')], ['Temp', quantity(recipe.temp, '°C')], ['Ratio', ratioFor(recipe)], ['Brew time', duration ? formatClock(duration) : '—']])}
+        ${parameters([
+          ['Dose', quantity(recipe.coffee, ' g')],
+          ['Water', quantity(recipe.water, ' g')],
+          ['Temp', quantity(recipe.temp, '°C')],
+          ['Ratio', ratioFor(recipe)],
+          ['Brew time', duration ? formatClock(duration) : '—'],
+          ['Grind size', escapeText(String(recipe.grind ?? '').trim() || '—')],
+        ])}
         <div class="card-actions"><button class="btn outline" data-action="edit-recipe" data-id="${id}">Edit</button><button class="btn" data-action="brew-recipe" data-id="${id}">Brew</button><button class="icon-btn" data-action="delete-recipe" data-id="${id}" aria-label="Delete ${escapeText(recipe.name)}">${icon('trash')}</button></div></div></article>`;
     }).join('') : empty('book', recipes.length ? 'No recipes match' : 'Your recipe library is empty',
       recipes.length ? 'Try a different search or filter.' : 'Create a recipe or generate one from a coffee bean.',
@@ -217,7 +237,17 @@ export function createWorkspace(actions) {
     refill(field('beanRoastFilter'), 'All roast levels', roasts.map(name => [name, name]));
     refill(field('beanProcessFilter'), 'All processes', processes.map(name => [name, name]));
     refill(field('assistantBean'), 'Choose a bean', beans.map(bean => [bean.id, bean.name]));
+    if (pendingAssistantBeanId) selectAssistantBean(pendingAssistantBeanId);
     field('beanNames').replaceChildren(...beans.map(bean => new Option(bean.name)));
+  }
+
+  function selectAssistantBean(id) {
+    if (beans.some(bean => bean.id === id)) {
+      field('assistantBean').value = id;
+      pendingAssistantBeanId = null;
+    } else {
+      pendingAssistantBeanId = id;
+    }
   }
 
   function renderOverview(stats) {
@@ -393,6 +423,7 @@ export function createWorkspace(actions) {
     switch (action) {
       case 'new-recipe': actions.newRecipe(); break;
       case 'new-bean': actions.newBean(); break;
+      case 'new-assistant-bean': actions.newBean('assistant'); break;
       case 'edit-recipe': actions.openRecipe(id); break;
       case 'delete-recipe': actions.deleteRecipe(id); break;
       case 'edit-bean': actions.openBean(id); break;
@@ -480,11 +511,27 @@ export function createWorkspace(actions) {
   field('searchBeans').addEventListener('input', renderBeans);
   field('beanRoastFilter').addEventListener('change', renderBeans);
   field('beanProcessFilter').addEventListener('change', renderBeans);
+  field('assistantBean').addEventListener('change', () => {
+    pendingAssistantBeanId = null;
+    field('assistantStatus').textContent = '';
+  });
+  field('assistantMethod').addEventListener('change', () => {
+    field('assistantStatus').textContent = '';
+    resetAssistantWater();
+  });
   field('assistantGenerate').addEventListener('click', () => {
-    const bean = beans.find(item => item.id === field('assistantBean').value);
-    if (bean) field('assistantStatus').textContent = '';
-    if (bean) actions.generateBean(bean, field('assistantMethod').value);
-    else field('assistantStatus').textContent = 'Choose a coffee bean first.';
+    const selection = field('assistantBean');
+    const bean = beans.find(item => item.id === selection.value);
+    const status = field('assistantStatus');
+    if (!bean) {
+      status.textContent = 'Choose or add a coffee bean first.';
+      selection.focus();
+      return;
+    }
+    status.textContent = '';
+    const water = field('assistantWater');
+    if (!water.reportValidity()) return;
+    actions.generateBean(bean, field('assistantMethod').value, water.valueAsNumber);
   });
   field('assistantImprove').addEventListener('click', () => {
     const recipe = recipes.find(item => item.id === field('assistantRecipe').value);
@@ -541,7 +588,7 @@ export function createWorkspace(actions) {
   showPage(location.hash.slice(1), false);
 
   return {
-    showPage, startTimer, toast, updateConnection,
+    showPage, startTimer, toast, updateConnection, selectAssistantBean,
     setRecipes(records, error = false) {
       recipes = records;
       readyRecipes = !error;
