@@ -40,7 +40,7 @@ export function lookupReferences(bean, targetId) {
   return { temperature, references, assumptions };
 }
 
-export function buildBaseline(bean, targetId = defaultTarget) {
+export function buildBaseline(bean, targetId = defaultTarget, requestedWater) {
   const { temperature, references, assumptions } = lookupReferences(bean, targetId);
   const target = targets[targetId];
   const clicks = target.clicks + (target.adjustGrind ? kit.roasts[bean.roast].clickOffset : 0);
@@ -57,7 +57,7 @@ export function buildBaseline(bean, targetId = defaultTarget) {
     return step;
   });
 
-  return {
+  const recipe = {
     name: `${bean.name} · ${target.label}`,
     bean: bean.name,
     target: targetId,
@@ -70,6 +70,20 @@ export function buildBaseline(bean, targetId = defaultTarget) {
     steps,
     references,
     assumptions,
+  };
+  if (requestedWater === undefined || requestedWater === recipe.water) return recipe;
+
+  const range = brewWaterRange(targetId);
+  if (!inRange(requestedWater, range)) {
+    throw new Error(`Enter between ${range.join(' and ')} g of water for this brew method.`);
+  }
+  const size = requestedWater / recipe.water;
+  return {
+    ...recipe,
+    coffee: roundGrams(recipe.coffee * size),
+    water: requestedWater,
+    ice: roundGrams(recipe.ice * size),
+    steps: scalePourWeights(steps, requestedWater),
   };
 }
 
@@ -93,6 +107,11 @@ function roundGrams(weight, minimum = 0, maximum = Infinity) {
   const lowerBound = Math.ceil(minimum * 10 - roundingTolerance);
   const upperBound = Math.floor(maximum * 10 + roundingTolerance);
   return Math.min(upperBound, Math.max(lowerBound, rounded)) / 10;
+}
+
+export function brewWaterRange(targetId) {
+  const target = targets[targetId];
+  return kit.limits.coffee.map(coffee => roundGrams(coffee * target.water / target.coffee));
 }
 
 export function applyBrewRatio(recipe, ratio, capacity) {
@@ -121,23 +140,25 @@ export function applyBrewRatio(recipe, ratio, capacity) {
     throw new Error('This ratio exceeds your inverted brewer capacity. Choose a lower ratio or reduce the coffee dose.');
   }
 
+  return { water: hotWater, ice: newIce, steps: recipeSteps(scalePourWeights(steps, hotWater), newIce) };
+}
+
+function scalePourWeights(steps, hotWater) {
   const finalPour = steps.findLastIndex(isWaterAddingStep);
   const previousWater = steps[finalPour]?.weight;
   if (!Number.isFinite(previousWater) || previousWater <= 0) {
-    throw new Error('Add a water weight to the final pour or bloom before changing the ratio.');
+    throw new Error('Add a water weight to the final pour or bloom before resizing the recipe.');
   }
   let priorWeight = 0;
-  const scaledSteps = steps.map((step, index) => {
+  return steps.map((step, index) => {
     if (!isWaterAddingStep(step)) return step;
     const weight = index === finalPour ? hotWater : roundGrams(step.weight / previousWater * hotWater);
     if (!Number.isFinite(step.weight) || weight <= priorWeight || weight > hotWater) {
-      throw new Error('Set increasing water weights on all pours before changing the ratio.');
+      throw new Error('Set increasing water weights on all pours before resizing the recipe.');
     }
     priorWeight = weight;
     return { ...step, weight };
   });
-
-  return { water: hotWater, ice: newIce, steps: recipeSteps(scaledSteps, newIce) };
 }
 
 export function validateRecipe(recipe, capacity) {

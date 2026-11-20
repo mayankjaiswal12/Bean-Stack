@@ -19,6 +19,7 @@ let allBeans = [];
 let editingStepIndex = null;
 let editingRecipeId = null;
 let editingBeanId = null;
+let beanEditorOrigin = 'beans';
 let generatedRecipe = null;
 let recipeDirty = false;
 const pendingRecipes = [];
@@ -34,10 +35,10 @@ const workspace = createWorkspace({
     workspace.showPage('editor');
     field('recipeName').focus();
   },
-  newBean() {
+  newBean(origin) {
     if (field('btnAddBean').disabled) return;
     resetBeanForm();
-    showBeanEditor();
+    showBeanEditor(origin);
   },
   openRecipe: id => window.loadRecipe(id),
   deleteRecipe: id => window.deleteRecipe(id),
@@ -342,8 +343,7 @@ document.querySelector('[data-page="editor"]').addEventListener('input', event =
 });
 calcRatio();
 
-function openGeneratedRecipe({ bean, target, position = 1, total = 1 }) {
-  const recipe = buildBaseline(bean, target);
+function openGeneratedRecipe({ bean, target, recipe = buildBaseline(bean, target), position = 1, total = 1 }) {
   const errors = validateRecipe(recipe, recipe.water);
   if (errors.length) throw new Error(errors.join(' '));
   const mapped = mapRecipe(recipe);
@@ -470,9 +470,9 @@ function selectedBrewMethods() {
   return selected.length ? selected : [defaultTarget];
 }
 
-function queueRecipes(bean, methods) {
+function queueRecipes(bean, methods, water) {
   pendingRecipes.push(...methods.map((target, index) => ({
-    bean, target, position: index + 1, total: methods.length,
+    bean, target, recipe: buildBaseline(bean, target, water), position: index + 1, total: methods.length,
   })));
   showNextBeanRecipe();
 }
@@ -512,22 +512,31 @@ field('btnBrewSavedBean').addEventListener('click', () => {
   queueRecipes(bean, selectedBrewMethods());
 });
 
-function showBeanEditor() {
-  workspace.showPage('beans');
+function showBeanEditor(origin = 'beans') {
+  beanEditorOrigin = origin;
+  workspace.showPage(origin);
+  field('trackedBrewMethods').hidden = origin === 'assistant';
+  field('btnBrewSavedBean').hidden = origin === 'assistant' || !editingBeanId;
   field('beanEditorTitle').textContent = editingBeanId ? 'Edit coffee bean' : 'Add coffee bean';
   if (!field('beanEditor').open) field('beanEditor').showModal();
   field('trackedBeanName').focus();
 }
 
-function generateBean(bean, target) {
+function generateBean(bean, target, water) {
   if (!bean) return;
+  const fromAssistant = water !== undefined;
   if (!roasts.includes(bean.roast)) {
-    window.editBean(bean.id);
+    window.editBean(bean.id, fromAssistant ? 'assistant' : 'beans');
     field('beanGeneratorStatus').textContent = 'Choose a roast level and save the bean before generating.';
     field('trackedRoast').focus();
     return;
   }
-  queueRecipes(bean, [target]);
+  try {
+    queueRecipes(bean, [target], water);
+  } catch (error) {
+    if (fromAssistant) field('assistantStatus').textContent = error.message;
+    else workspace.toast(error.message);
+  }
 }
 
 function improveRecipe(recipe) {
@@ -872,14 +881,15 @@ document.getElementById('btnAddBean').addEventListener('click', async () => {
   }
 
   const beanId = editingBeanId;
+  const fromAssistant = beanEditorOrigin === 'assistant';
   const roast = field('trackedRoast').value;
-  if (!beanId && !roast) {
+  if ((!beanId || fromAssistant) && !roast) {
     field('beanGeneratorStatus').textContent = 'Choose a roast level so Bean Stack can generate a recipe.';
     field('trackedRoast').focus();
     return;
   }
 
-  const methods = selectedBrewMethods();
+  const methods = fromAssistant && !beanId ? [field('assistantMethod').value] : selectedBrewMethods();
   btn.disabled = true;
   field('btnCancelBean').disabled = true;
   btn.textContent = beanId ? "Updating..." : "Saving...";
@@ -901,11 +911,13 @@ document.getElementById('btnAddBean').addEventListener('click', async () => {
     timestamp: serverTimestamp()
   };
 
+  let savedBeanId = beanId;
   try {
     if (beanId) {
       await setDoc(doc(db, "beans", beanId), beanData);
     } else {
-      await addDoc(collection(db, "beans"), beanData);
+      const savedBean = await addDoc(collection(db, "beans"), beanData);
+      savedBeanId = savedBean.id;
     }
     field('beanEditor').close();
     resetBeanForm();
@@ -918,7 +930,13 @@ document.getElementById('btnAddBean').addEventListener('click', async () => {
     btn.disabled = false;
     field('btnCancelBean').disabled = false;
   }
-  if (!beanId) queueRecipes(beanData, methods);
+  if (fromAssistant) {
+    workspace.selectAssistantBean(savedBeanId);
+    field('assistantStatus').textContent = '';
+    field('assistantWater').focus();
+  } else if (!beanId) {
+    queueRecipes(beanData, methods);
+  }
 });
 
 field('btnCancelBean').addEventListener('click', () => field('beanEditor').close());
@@ -946,7 +964,7 @@ function resetBeanForm() {
   document.getElementById('btnCancelBean').style.display = 'none';
 }
 
-window.editBean = function(id) {
+window.editBean = function(id, origin = 'beans') {
   if (field('btnAddBean').disabled) return;
   const bean = allBeans.find(b => b.id === id);
   if (!bean) return;
@@ -956,7 +974,6 @@ window.editBean = function(id) {
   document.getElementById('trackedRoaster').value = bean.roaster || "";
   document.getElementById('trackedNotes').value = bean.notes || "";
   field('beanGeneratorStatus').textContent = '';
-  field('btnBrewSavedBean').hidden = false;
   field('trackedRoast').value = bean.roast || '';
   field('trackedProcess').value = bean.process || '';
   field('trackedRoastDate').value = bean.roastDate || '';
@@ -974,7 +991,7 @@ window.editBean = function(id) {
   editingBeanId = id;
   document.getElementById('btnAddBean').textContent = "Update Bean";
   document.getElementById('btnCancelBean').style.display = 'inline-block';
-  showBeanEditor();
+  showBeanEditor(origin);
 };
 
 window.deleteBean = async (id) => {

@@ -246,7 +246,19 @@
         <section data-page="assistant" class="page" hidden>
           <div class="page-heading"><h1>AI Coffee Assistant</h1><p>Turn a bean profile into a recipe and get a second opinion on grind or water temperature.</p></div>
           <div class="assistant-grid">
-            <section class="panel assistant-card"><span class="feature-icon" data-icon="spark"></span><h2>Generate from a bean</h2><label>Coffee bean<select id="assistantBean"><option value="">Choose a bean</option></select></label><label class="push-top">Brew method<select id="assistantMethod"></select></label><button class="btn push-top" id="assistantGenerate">Generate recipe</button></section>
+            <section class="panel assistant-card">
+              <span class="feature-icon" data-icon="spark"></span>
+              <h2>Generate from a bean</h2>
+              <div class="assistant-bean-row">
+                <label>Coffee bean<select id="assistantBean"><option value="">Choose a bean</option></select></label>
+                <button class="btn outline" data-action="new-assistant-bean"><span data-icon="plus"></span> Add bean</button>
+              </div>
+              <div class="grid-2 assistant-brew-fields">
+                <label>Brew method<select id="assistantMethod"></select></label>
+                <label><span id="assistantWaterLabel">Water (g)</span><input id="assistantWater" type="number" step="0.1" required></label>
+              </div>
+              <button class="btn push-top" id="assistantGenerate">Generate recipe</button>
+            </section>
             <section class="panel assistant-card"><span class="feature-icon sage" data-icon="sliders"></span><h2>Improve a saved recipe</h2><p>Get one small grind or temperature suggestion using the recipe’s brewing parameters.</p><label>Saved recipe<select id="assistantRecipe"><option value="">Choose a recipe</option></select></label><button class="btn outline push-top" id="assistantImprove">Review recipe</button></section>
           </div>
           <section class="notice"><span data-icon="info"></span><div><strong>Gemini connection</strong><p id="assistantConnection"></p><p>When enabled, Bean Stack sends the selected bean’s roast, process, roast date, bag notes, and brewing parameters to Google for a recommendation.</p></div><button class="btn outline" id="btnGeminiSettings">AI settings</button></section>
