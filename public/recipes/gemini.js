@@ -7,6 +7,7 @@ const method = { temperature: 'temp', grind: 'clicks' };
 const adjustmentLimit = 2;
 const minimumCallInterval = 12_000;
 const timeout = 30_000;
+const legacyFormatField = /\b_?(?:response.?json.?schema|response.?mime.?type)\b/i;
 
 const adjustmentSchema = {
   type: 'object',
@@ -57,12 +58,17 @@ export function makePrompt(bean, baseline) {
   ].join('\n');
 }
 
-export function applySuggestion(baseline, suggestion) {
+function isAdjustment(suggestion) {
   const { adjustment, delta, why } = suggestion ?? {};
-  if ((adjustment !== 'none' && !Object.hasOwn(method, adjustment)) ||
-      !Number.isInteger(delta) || Math.abs(delta) > adjustmentLimit ||
-      (adjustment === 'none' ? delta !== 0 : delta === 0) ||
-      typeof why !== 'string' || !why.trim() || why.length > 300) return null;
+  return (adjustment === 'none' || Object.hasOwn(method, adjustment)) &&
+    Number.isInteger(delta) && Math.abs(delta) <= adjustmentLimit &&
+    (adjustment === 'none' ? delta === 0 : delta !== 0) &&
+    typeof why === 'string' && Boolean(why.trim()) && why.length <= 300;
+}
+
+export function applySuggestion(baseline, suggestion) {
+  if (!isAdjustment(suggestion)) return null;
+  const { adjustment, delta, why } = suggestion;
 
   const changedProperty = method[adjustment];
   const recipe = { ...baseline };
@@ -110,14 +116,41 @@ function retryAfter(header) {
   return Number.isFinite(value) ? Math.max(0, value) : 20_000;
 }
 
+function describeApiError(status, error, settings) {
+  const reasons = Array.isArray(error?.details) ? error.details.map(detail => detail?.reason) : [];
+  const code = `HTTP ${status}`;
+  if (status === 401 || reasons.includes('API_KEY_INVALID')) {
+    return `Gemini did not accept this key (${code}). Check the key in AI settings.`;
+  }
+  if (reasons.some(reason => /^API_KEY_.*_BLOCKED$/.test(reason))) {
+    return `Gemini blocked this key (${code}). Check its API and website restrictions in Google Cloud.`;
+  }
+  if (reasons.includes('SERVICE_DISABLED')) {
+    return `The Gemini API is disabled for this key’s Google Cloud project (${code}).`;
+  }
+  if (status === 404) return `Gemini could not find ${settings.model} (${code}). Check the model ID and its availability.`;
+  if (status >= 500) return `Gemini is temporarily unavailable (${code}).`;
+
+  let detail = typeof error?.message === 'string' ? error.message : '';
+  if (settings.key) detail = detail.replaceAll(settings.key, '[redacted]');
+  detail = detail.replace(/\bAIza[\w-]{20,}\b/g, '[redacted]').replace(/\s+/g, ' ').trim();
+  if (detail.length > 240) detail = `${detail.slice(0, 237)}…`;
+  const summary = status === 403 ? `Gemini did not accept this key or project’s permissions (${code}).`
+    : error?.status === 'FAILED_PRECONDITION' ? `Gemini blocked the request because a project requirement was unmet (${code}).`
+    : `Gemini rejected the request for ${settings.model} (${code}).`;
+  return detail ? `${summary} ${detail}` : summary;
+}
+
 export function createGeminiClient({
   fetchRequest = globalThis.fetch,
   pause = wait,
   now = Date.now,
 } = {}) {
   let lastStart = -Infinity;
+  const responseFormatModels = new Set();
 
-  async function request(settings, prompt, { signal, onRetry, verify = false } = {}) {
+  async function request(settings, prompt, { signal, onRetry } = {}) {
+    let useResponseFormat = responseFormatModels.has(settings.model);
     for (let attempt = 0; attempt < 2; attempt += 1) {
       let throttle = lastStart + minimumCallInterval - now();
       while (throttle > 0) {
@@ -135,12 +168,12 @@ export function createGeminiClient({
           headers: { 'Content-Type': 'application/json', 'x-goog-api-key': settings.key },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            ...(verify ? {} : {
-              generationConfig: {
-                responseMimeType: 'application/json',
-                responseJsonSchema: adjustmentSchema,
-              },
-            }),
+            generationConfig: useResponseFormat ? {
+              responseFormat: { text: { mimeType: 'APPLICATION_JSON', schema: adjustmentSchema } },
+            } : {
+              responseMimeType: 'application/json',
+              responseJsonSchema: adjustmentSchema,
+            },
           }),
           signal: requestSignal,
         });
@@ -157,16 +190,26 @@ export function createGeminiClient({
         }
         throw new Error('Gemini rate limit reached.');
       }
-      if (response.status === 401 || response.status === 403) throw new Error('Gemini did not accept this key.');
-      if (response.status === 404) throw new Error('Gemini model unavailable. Check the model ID.');
-      if (!response.ok) throw new Error('Gemini could not use these settings.');
-      if (verify) return;
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        signal?.throwIfAborted();
+        const error = body?.error;
+        // Some models reject the older REST response-format fields.
+        if (!useResponseFormat && attempt === 0 && response.status === 400 && legacyFormatField.test(error?.message ?? '')) {
+          useResponseFormat = true;
+          onRetry?.(minimumCallInterval / 1000);
+          continue;
+        }
+        throw new Error(describeApiError(response.status, error, settings));
+      }
       try {
         const data = await response.json();
         const text = data.candidates?.[0]?.content?.parts
           ?.filter(part => !part.thought && typeof part.text === 'string')
           .map(part => part.text).join('').trim();
-        return JSON.parse(text?.replace(/^```(?:json)?\s*|\s*```$/gi, ''));
+        const answer = JSON.parse(text?.replace(/^```(?:json)?\s*|\s*```$/gi, ''));
+        if (useResponseFormat && isAdjustment(answer)) responseFormatModels.add(settings.model);
+        return answer;
       } catch (error) {
         if (signal?.aborted) throw error;
         if (attempt === 1) throw new Error('Gemini returned an unreadable response.');
@@ -176,8 +219,9 @@ export function createGeminiClient({
   }
 
   return {
-    testKey(settings, options) {
-      return request(settings, 'Reply with OK.', { ...options, verify: true });
+    async testKey(settings, options) {
+      const answer = await request(settings, 'Test the connection. Return adjustment "none", delta 0, and why "Recipe response test successful."', options);
+      if (!isAdjustment(answer)) throw new Error('Gemini did not return the recipe format Bean Stack expects.');
     },
     async refine(settings, bean, baseline, options) {
       const answer = await request(settings, makePrompt(bean, baseline), options);
